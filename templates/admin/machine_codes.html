@@ -1,0 +1,91 @@
+{% extends "partials/base.html" %}
+{% set help_key = "machine_codes" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Machine Codes — AI Digital Brain{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('key', 22) }} Machine Codes</h1>
+      <p class="card-subtitle">{{ pagination.total }} codes · page {{ pagination.page }} of {{ pagination.pages or 1 }}</p>
+    </div>
+    <a class="btn" href="{{ url_for('admin.machine_codes_import') }}">
+      {{ icons.icon('upload', 16) }} Import Excel
+    </a>
+  </div>
+
+  <form method="get" class="toolbar">
+    <div class="field">
+      <label>Shop</label>
+      <select name="shop">
+        <option value="">— All —</option>
+        {% for s in shops %}
+          <option value="{{ s.code }}" {{ 'selected' if current_shop == s.code }}>{{ s.code }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field" style="flex:2;">
+      <label>Search</label>
+      <input type="text" name="q" value="{{ q }}" placeholder="code, machine, model, unit...">
+    </div>
+    <button class="btn secondary" type="submit">{{ icons.icon('search', 16) }} Search</button>
+  </form>
+
+  {% if pagination.items %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr><th>Shop</th><th>Machine</th><th>Model</th><th>Unit</th><th>Code</th><th>Status</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for c in pagination.items %}
+        <tr>
+          <td><span class="pill accent">{{ c.shop.code if c.shop else '—' }}</span></td>
+          <td>{{ c.machine_name or (c.machine.name if c.machine else '—') }}</td>
+          <td class="muted">{{ c.model or '—' }}</td>
+          <td class="muted">{{ c.unit or '—' }}</td>
+          <td>
+            <span class="code" id="code-{{ c.id }}">{{ c.code }}</span>
+            <button class="btn ghost tiny" type="button"
+                    onclick="copyFrom('code-{{ c.id }}')"
+                    title="Copy code">{{ icons.icon('copy', 12) }}</button>
+          </td>
+          <td>
+            {% if c.status == 'APPROVED' %}<span class="pill ok">{{ c.status }}</span>
+            {% elif c.status == 'PENDING' %}<span class="pill warn">{{ c.status }}</span>
+            {% else %}<span class="pill">{{ c.status }}</span>{% endif %}
+          </td>
+          <td>
+            {% if c.status == 'PENDING' and current_user.role in ['SUPER_ADMIN', 'ADMIN', 'EDITOR'] %}
+            <form method="post" action="{{ url_for('admin.machine_code_approve', code_id=c.id) }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn success tiny" type="submit">{{ icons.icon('check', 12) }} Approve</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination">
+    <span class="info">Showing {{ pagination.items|length }} of {{ pagination.total }}</span>
+    {% if pagination.has_prev %}
+      <a class="btn ghost tiny" href="{{ url_for('admin.machine_codes_list', page=pagination.prev_num, shop=current_shop, q=q) }}">
+        {{ icons.icon('chevron-left', 14) }} Prev
+      </a>
+    {% endif %}
+    {% if pagination.has_next %}
+      <a class="btn ghost tiny" href="{{ url_for('admin.machine_codes_list', page=pagination.next_num, shop=current_shop, q=q) }}">
+        Next {{ icons.icon('chevron-right', 14) }}
+      </a>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="empty">{{ icons.icon('key', 40) }}<p>No machine codes yet.</p></div>
+  {% endif %}
+</div>
+
+{% endblock %}

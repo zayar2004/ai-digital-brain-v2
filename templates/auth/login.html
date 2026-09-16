@@ -1,0 +1,84 @@
+{% import "partials/icons.html" as icons %}
+<!doctype html>
+<html lang="my" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d12">
+  <title>Login — AI Digital Brain</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+  <script>
+    (function(){
+      try { var t = localStorage.getItem('adb.theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', t); } catch(e){}
+    })();
+  </script>
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    .login-wrap { width: 100%; max-width: 420px; }
+    .login-head { text-align: center; margin-bottom: 24px; }
+    .login-logo {
+      width: 56px; height: 56px; margin: 0 auto 14px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; box-shadow: 0 12px 32px var(--accent-bg);
+    }
+    .login-logo svg { width: 28px; height: 28px; }
+    .login-head h1 { font-size: 22px; margin: 0 0 6px; }
+    .login-head p { color: var(--text-dim); font-size: 14px; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-head">
+      <div class="login-logo">{{ icons.icon('brain', 28) }}</div>
+      <h1>AI Digital Brain</h1>
+      <p>Admin ဝင်ရန် အကောင့်ထည့်ပါ</p>
+    </div>
+
+    <div class="card">
+      {% set help_key = "login" %}
+      {% include "partials/help_banner.html" %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, msg in messages %}
+          <div class="flash {{ category }}">{{ msg }}</div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="post" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+          <label for="username">Username</label>
+          {{ form.username(id="username", autocomplete="username", autofocus=true, class="input", placeholder="admin") }}
+          {% if form.username.errors %}
+            <div class="muted" style="color:var(--danger)">{{ form.username.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          {{ form.password(id="password", autocomplete="current-password", class="input", placeholder="••••••••") }}
+          {% if form.password.errors %}
+            <div class="muted" style="color:var(--danger)">{{ form.password.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <label style="display:flex;align-items:center;gap:8px;margin-bottom:16px;color:var(--text-dim);font-size:13px;">
+          {{ form.remember() }} <span>Remember me</span>
+        </label>
+
+        <button type="submit" class="btn" style="width:100%;justify-content:center;">
+          {{ icons.icon('log-in', 16) }} Login
+        </button>
+      </form>
+    </div>
+
+    <p style="text-align:center;color:var(--text-faint);font-size:12px;margin-top:20px;">
+      AI Digital Brain · v0.13
+    </p>
+  </div>
+</body>
+</html>

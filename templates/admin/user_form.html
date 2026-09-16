@@ -1,0 +1,65 @@
+{% extends "partials/base.html" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}{{ 'Edit' if mode == 'edit' else 'New' }} User{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">
+        {{ icons.icon('users', 22) }}
+        {{ 'Edit User' if mode == 'edit' else 'New User' }}
+      </h1>
+    </div>
+  </div>
+
+  <form method="post" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-group">
+      <label>Username *</label>
+      {% if mode == 'edit' %}
+        <input type="text" value="{{ user.username }}" disabled>
+      {% else %}
+        <input type="text" name="username" required maxlength="64">
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label>Full Name</label>
+      <input type="text" name="full_name" maxlength="255"
+             value="{{ user.full_name if mode == 'edit' and user.full_name else '' }}">
+    </div>
+
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" name="email" maxlength="255"
+             value="{{ user.email if mode == 'edit' and user.email else '' }}">
+    </div>
+
+    <div class="form-group">
+      <label>Password {% if mode == 'new' %}*{% else %}(leave blank to keep){% endif %}</label>
+      <input type="password" name="password" {% if mode == 'new' %}required{% endif %} minlength="8">
+      <div class="field-hint">အနည်းဆုံး ၈ လုံး။</div>
+    </div>
+
+    <div class="form-group">
+      <label>Role</label>
+      <select name="role" required>
+        {% for r in roles %}
+          <option value="{{ r }}" {{ 'selected' if mode == 'edit' and user.role == r }}>{{ r }}</option>
+        {% endfor %}
+      </select>
+      <div class="field-hint">
+        SUPER_ADMIN > ADMIN > EDITOR > VIEWER
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn" type="submit">{{ icons.icon('check', 16) }} Save</button>
+      <a class="btn ghost" href="{{ url_for('admin.users_list') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

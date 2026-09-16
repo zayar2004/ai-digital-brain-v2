@@ -1,0 +1,59 @@
+{% extends "partials/base.html" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Report {{ report.report_date }} — AI Digital Brain{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('file-text', 22) }} Report · {{ report.report_date }}</h1>
+      <p class="card-subtitle">
+        Shop <span class="pill accent">{{ report.shop.code if report.shop else '—' }}</span>
+        · Status
+        {% if report.status == 'APPROVED' %}<span class="pill ok">{{ report.status }}</span>
+        {% elif report.status == 'PENDING' %}<span class="pill warn">{{ report.status }}</span>
+        {% else %}<span class="pill">{{ report.status }}</span>{% endif %}
+      </p>
+    </div>
+  </div>
+
+  {% if report.title %}
+  <p><strong>{{ report.title }}</strong></p>
+  {% endif %}
+
+  {% if metrics %}
+  <h2>Metrics</h2>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Key</th><th>Value</th></tr></thead>
+      <tbody>
+        {% for k, v in metrics.items() %}
+        <tr><td>{{ k }}</td><td><span class="code">{{ v }}</span></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if report.notes %}
+  <h2>Notes</h2>
+  <pre style="white-space:pre-wrap;font-family:inherit;">{{ report.notes }}</pre>
+  {% endif %}
+
+  {% if report.original_content %}
+  <h2>Original</h2>
+  <pre style="white-space:pre-wrap;font-family:inherit;color:var(--text-dim);font-size:13px;">{{ report.original_content }}</pre>
+  {% endif %}
+
+  <div class="form-actions">
+    {% if report.status == 'PENDING' and current_user.role in ['SUPER_ADMIN','ADMIN'] %}
+    <form method="post" action="{{ url_for('admin.report_approve', report_id=report.id) }}" style="display:inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn success" type="submit">{{ icons.icon('check', 16) }} Approve</button>
+    </form>
+    {% endif %}
+    <a class="btn ghost" href="{{ url_for('admin.reports_list') }}">← Back</a>
+  </div>
+</div>
+
+{% endblock %}

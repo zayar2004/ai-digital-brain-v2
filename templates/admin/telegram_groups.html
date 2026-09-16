@@ -1,0 +1,93 @@
+{% extends "partials/base.html" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Telegram Groups — AI Digital Brain{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">👥 Telegram Groups</h1>
+      <p class="card-subtitle">
+        Group တွေကို Bot နဲ့ ချိတ်ဆက် — Topic တစ်ခုချင်း စီမံ
+      </p>
+    </div>
+  </div>
+
+  <form method="post" action="{{ url_for('admin.telegram_groups_parse') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-group">
+      <label>Group Message Link (or Chat ID)</label>
+      <input type="text" name="link" maxlength="500"
+             placeholder="https://t.me/c/1234567890/5  or  -1001234567890">
+      <div class="field-hint">
+        Group → <code>🤖 AI Bot</code> Topic → Message long-press → Copy Link
+      </div>
+    </div>
+
+    <div class="form-actions" style="border:0;padding-top:0;">
+      <button class="btn" type="submit">➕ Add Group</button>
+    </div>
+  </form>
+</div>
+
+{% if groups %}
+<div class="card">
+  <h2 class="card-title">📋 Registered Groups ({{ groups|length }})</h2>
+
+  <div style="display:grid;gap:10px;">
+    {% for g in groups %}
+    <a href="{{ url_for('admin.telegram_group_detail', chat_id=g.chat_id) }}"
+       style="display:block;text-decoration:none;color:inherit;
+              padding:14px;background:var(--bg);
+              border:1px solid var(--border);border-radius:12px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="font-size:24px;">💬</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;">{{ g.title or 'Group ' + g.chat_id|string }}</div>
+          <div class="muted" style="font-size:12px;margin-top:2px;">
+            <code>{{ g.chat_id }}</code>
+            · {{ g.chat_type or '—' }}
+            · Topics: <strong>{{ g.thread_list()|length or 'All' }}</strong>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          {% if g.is_enabled %}
+            <span class="pill ok">Enabled</span>
+          {% else %}
+            <span class="pill danger">Disabled</span>
+          {% endif %}
+          {% if g.require_mention %}
+            <div class="muted" style="font-size:10px;margin-top:4px;">@mention</div>
+          {% endif %}
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="empty">
+    <p>Group မရှိသေးပါ။</p>
+    <p class="muted" style="font-size:12px;">
+      ဒါမှမဟုတ် Group ထဲမှာ Bot ကို admin ထည့်ပြီး — <code>/setup</code> ပို့ပါ။
+    </p>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2 class="card-title">📖 Setup လမ်းညွှန်</h2>
+  <ol style="color:var(--text-mid);font-size:14px;line-height:1.8;padding-left:20px;">
+    <li>Telegram → <strong>New Group</strong> → Members ထည့်</li>
+    <li>Group Settings → <strong>Topics</strong> → Enable</li>
+    <li><strong>🤖 AI Bot</strong> Topic ဖန်တီး</li>
+    <li>Bot ကို <strong>Admin</strong> ထည့်</li>
+    <li><strong>🤖 AI Bot</strong> Topic မှာ — <code>/setup</code> ပို့</li>
+    <li>Bot → Group ကို <strong>auto register</strong> လုပ်မယ်</li>
+    <li>ဒီ page မှာ ပြန်စစ် → Configure</li>
+  </ol>
+</div>
+
+{% endblock %}

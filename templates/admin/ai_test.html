@@ -1,0 +1,113 @@
+{% extends "partials/base.html" %}
+{% set help_key = "ai_test" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}AI Test Center{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('brain', 22) }} AI Test Center</h1>
+      <p class="card-subtitle">
+        Question တစ်ခု ရိုက်ထည့်ပြီး AI က ဘယ်လို ဖြေလဲ ကြည့်ပါ။
+        Search results + Grounding + Answer အားလုံး ပြပါမယ်။
+      </p>
+    </div>
+    <div>
+      {% if ai_status.configured %}
+        <span class="pill ok">{{ ai_status.provider }}</span>
+      {% else %}
+        <span class="pill danger">not configured</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <form method="post" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-group">
+      <label>Question</label>
+      <textarea name="question" rows="3" autofocus
+                placeholder="ဥပမာ: Carnival Circus P3 Error 07 ဘာဖြစ်တာလဲ?"
+                >{{ question }}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Shop (optional)</label>
+      <select name="shop">
+        <option value="">— All —</option>
+        {% for s in shops %}
+          <option value="{{ s.code }}" {{ 'selected' if shop_code == s.code }}>{{ s.code }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn" type="submit">{{ icons.icon('search', 16) }} Test AI</button>
+    </div>
+  </form>
+</div>
+
+{% if result %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">✅ Final Answer</h2>
+      <p class="card-subtitle">
+        Provider: <span class="pill">{{ result.provider or '—' }}</span>
+        Model: <span class="pill">{{ result.model or '—' }}</span>
+        Grounding:
+        {% if result.grounding_ok %}<span class="pill ok">OK</span>
+        {% else %}<span class="pill danger">PROBLEMS</span>{% endif %}
+      </p>
+    </div>
+  </div>
+
+  {% if result.ok %}
+    <pre style="white-space:pre-wrap;font-family:inherit;font-size:15px;background:var(--bg-3);padding:14px;border-radius:10px;border:1px solid var(--border);margin:0;">{{ result.answer }}</pre>
+  {% else %}
+    <div class="flash error">AI Error: {{ result.error }}</div>
+  {% endif %}
+
+  {% if result.grounding_problems %}
+  <h2 style="color:var(--warn);">Grounding Problems</h2>
+  <ul style="color:var(--warn);font-size:13px;">
+    {% for p in result.grounding_problems %}
+      <li>{{ p }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+
+{% if search and search.total > 0 %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">🔍 Search Hits ({{ search.total }})</h2>
+      <p class="card-subtitle">Deterministic search before AI</p>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Kind</th><th>Title</th><th>Subtitle</th><th>Score</th></tr></thead>
+      <tbody>
+        {% for h in search.hits[:30] %}
+        <tr>
+          <td><span class="pill">{{ h.kind }}</span></td>
+          <td>{{ h.title }}</td>
+          <td class="muted">{{ h.subtitle }}</td>
+          <td class="muted">{{ '%.2f'|format(h.score) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% elif search %}
+<div class="card">
+  <div class="empty">{{ icons.icon('search', 40) }}<p>Search hits မတွေ့ပါ။</p></div>
+</div>
+{% endif %}
+{% endif %}
+
+{% endblock %}

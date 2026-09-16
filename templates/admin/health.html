@@ -1,0 +1,74 @@
+{% extends "partials/base.html" %}
+{% set help_key = "health" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}System Health — AI Digital Brain{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('activity', 22) }} System Health</h1>
+      <p class="card-subtitle">{{ site_name }}</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a class="btn ghost tiny" href="{{ url_for('admin.settings_page') }}">
+        {{ icons.icon('settings', 14) }} Settings
+      </a>
+      <a class="btn ghost tiny" href="{{ url_for('admin.backups_list') }}">
+        {{ icons.icon('folder', 14) }} Backups
+      </a>
+    </div>
+  </div>
+
+  <table class="simple">
+    <tr>
+      <th>Database</th>
+      <td>
+        {% if db_status == 'ok' %}<span class="pill ok">ok</span>
+        {% else %}<span class="pill danger">{{ db_status }}</span>{% endif %}
+        {% if db_size %}<span class="muted"> · {{ (db_size / 1024) | round(1) }} KB</span>{% endif %}
+      </td>
+    </tr>
+    <tr>
+      <th>AI Provider</th>
+      <td>
+        {% if ai_configured %}
+          <span class="pill ok">configured</span>
+          <span class="muted"> · {{ ai_provider }}</span>
+        {% else %}
+          <span class="pill danger">not configured</span>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <th>Telegram</th>
+      <td>
+        {% if telegram_configured and telegram_enabled %}
+          <span class="pill ok">enabled</span>
+        {% elif telegram_configured %}
+          <span class="pill warn">token set, disabled</span>
+        {% else %}
+          <span class="pill danger">not configured</span>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+</div>
+
+{% if counts %}
+<div class="card">
+  <h2 class="card-title">Records</h2>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Table</th><th>Count</th></tr></thead>
+      <tbody>
+        {% for k, v in counts.items() %}
+        <tr><td>{{ k }}</td><td><span class="code">{{ v }}</span></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,24 @@
+{% import "partials/icons.html" as icons %}
+{% set help = _help_data.get(help_key) if help_key and _help_data else None %}
+{% if help %}
+<div class="help-banner" id="help-{{ help_key }}">
+  <button type="button" class="help-toggle" onclick="toggleHelp('{{ help_key }}')">
+    <span class="help-icon">{{ icons.icon('info', 16) }}</span>
+    <span class="help-title">{{ help.title }}</span>
+    <span class="help-arrow">{{ icons.icon('chevron-right', 16) }}</span>
+  </button>
+  <div class="help-body" hidden>
+    {% for line in help.body.split('\n') %}
+      {% if line.strip() %}<p>{{ line }}</p>{% endif %}
+    {% endfor %}
+    {% if help.tips %}
+    <div class="help-tips">
+      <strong>💡 Tips</strong>
+      <ul>
+        {% for tip in help.tips %}<li>{{ tip }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}

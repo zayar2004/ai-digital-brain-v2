@@ -1,0 +1,93 @@
+{% extends "partials/base.html" %}
+{% set help_key = "reports" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}New Report{% endblock %}
+{% block content %}
+
+{% if mode == "input" %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('plus', 22) }} New Report</h1>
+      <p class="card-subtitle">
+        ရက်စွဲ + metrics တွေကို ရိုးရိုး စာသားနဲ့ paste လုပ်ပါ။
+      </p>
+    </div>
+  </div>
+
+  <form method="post" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-group">
+      <label>Shop *</label>
+      <select name="shop" required>
+        <option value="">— Select —</option>
+        {% for s in shops %}<option value="{{ s.code }}">{{ s.code }}</option>{% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Paste report *</label>
+      <textarea name="raw_text" rows="10" required
+                placeholder="7/9/2026 Update&#10;Machine 144&#10;Daily Key 236&#10;Spare Key 236&#10;Chair Shot 103"></textarea>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn" type="submit">{{ icons.icon('brain', 16) }} Parse</button>
+      <a class="btn ghost" href="{{ url_for('admin.reports_list') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+
+{% elif mode == "preview" %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('search', 22) }} Preview</h1>
+      <p class="card-subtitle">
+        Shop <span class="pill accent">{{ shop.code }}</span>
+        · Date <span class="pill">{{ parsed.report_date or '?' }}</span>
+        · Metrics {{ parsed.metrics|length }}
+      </p>
+    </div>
+  </div>
+
+  <form method="post" action="{{ url_for('admin.report_new') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="shop" value="{{ shop.code }}">
+    <input type="hidden" name="raw_text" value="{{ raw_text }}">
+    <input type="hidden" name="save_action" value="1">
+
+    <div class="form-group">
+      <label>Report date (YYYY-MM-DD) *</label>
+      <input type="text" name="report_date" required
+             value="{{ parsed.report_date.isoformat() if parsed.report_date else '' }}">
+    </div>
+
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" name="title" maxlength="500" value="{{ parsed.title or '' }}">
+    </div>
+
+    <h2>Metrics</h2>
+    {% for k, v in parsed.metrics.items() %}
+    <div class="row" style="margin-bottom:6px;">
+      <input type="text" name="metric_key_{{ loop.index0 }}" value="{{ k }}" style="flex:2;">
+      <input type="text" name="metric_val_{{ loop.index0 }}" value="{{ v }}" style="flex:1;">
+    </div>
+    {% endfor %}
+
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea name="notes" rows="3">{{ parsed.notes or '' }}</textarea>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn success" type="submit">{{ icons.icon('check', 16) }} Save as PENDING</button>
+      <a class="btn ghost" href="{{ url_for('admin.report_new') }}">← Back</a>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+{% endblock %}

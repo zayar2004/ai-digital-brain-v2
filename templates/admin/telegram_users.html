@@ -1,0 +1,84 @@
+{% extends "partials/base.html" %}
+{% set help_key = "telegram_users" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Telegram Users — AI Digital Brain{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('users', 22) }} Telegram Users</h1>
+      <p class="card-subtitle">
+        {{ users|length }} users · Telegram account တွေကို ဆိုင်တွေနဲ့ ချိတ်ဆက်ပါ
+      </p>
+    </div>
+  </div>
+
+  {% if users %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Username</th>
+          <th>Shops</th>
+          <th>Verified</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td><span class="code">{{ u.telegram_user_id }}</span></td>
+          <td>
+            {{ u.first_name or '—' }}
+            {% if u.last_name %} {{ u.last_name }}{% endif %}
+          </td>
+          <td class="muted">
+            {% if u.telegram_username %}@{{ u.telegram_username }}{% else %}—{% endif %}
+          </td>
+          <td>
+            {% set codes = user_shop_codes.get(u.id, []) %}
+            {% if codes %}
+              {% for c in codes %}
+                <span class="pill accent">{{ c }}</span>
+              {% endfor %}
+            {% else %}
+              <span class="pill danger">no shop</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.is_verified %}<span class="pill ok">verified</span>
+            {% else %}<span class="pill">unverified</span>{% endif %}
+          </td>
+          <td>
+            <a class="btn ghost tiny" href="{{ url_for('admin.telegram_user_detail', tg_user_id=u.id) }}">
+              Manage
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    {{ icons.icon('users', 40) }}
+    <p>Telegram user မရှိသေးပါ။ User က bot ကို `/start` ပို့ရင် ဒီမှာ ပေါ်လာမယ်။</p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="card-title">{{ icons.icon('info', 18) }} အသုံးပြုနည်း</h2>
+  <ol style="color:var(--text-mid);font-size:14px;line-height:1.7;padding-left:20px;">
+    <li>Telegram user က သင့် bot ကို <code>/start</code> ပို့ပါ။</li>
+    <li>သူတို့ရဲ့ Telegram ID နဲ့ name က ဒီစာမျက်နှာမှာ ပေါ်လာမယ်။</li>
+    <li><strong>Manage</strong> ကို နှိပ်ပြီး <strong>Shop</strong> ရွေးပါ။</li>
+    <li><strong>Link</strong> နှိပ်ပါ။</li>
+    <li>User က bot ကို ပြန် <code>/shop</code> ပို့ရင် verified shop ပေါ်လာမယ်။</li>
+  </ol>
+</div>
+
+{% endblock %}

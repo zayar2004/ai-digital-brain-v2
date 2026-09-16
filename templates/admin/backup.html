@@ -1,0 +1,76 @@
+{% extends "partials/base.html" %}
+{% set help_key = "backup" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Backups — AI Digital Brain{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('folder', 22) }} Backups</h1>
+      <p class="card-subtitle">{{ backups|length }} backups</p>
+    </div>
+    <form method="post" action="{{ url_for('admin.backups_create') }}"
+          style="display:flex;gap:8px;align-items:flex-end;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group" style="margin:0;min-width:140px;">
+        <label>Label (optional)</label>
+        <input type="text" name="label" maxlength="64" placeholder="manual">
+      </div>
+      <button class="btn" type="submit">{{ icons.icon('plus', 16) }} Create</button>
+    </form>
+  </div>
+
+  {% if backups %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Name</th><th>Size</th><th>Created</th><th></th></tr></thead>
+      <tbody>
+        {% for b in backups %}
+        <tr>
+          <td><span class="code">{{ b.name }}</span></td>
+          <td class="muted">{{ (b.size_bytes / 1024 / 1024) | round(2) }} MB</td>
+          <td class="muted">{{ b.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>
+            <a class="btn ghost tiny" href="{{ url_for('admin.backups_download', name=b.name) }}">
+              {{ icons.icon('download', 12) }}
+            </a>
+            <form method="post" action="{{ url_for('admin.backups_restore', name=b.name) }}"
+                  style="display:inline;"
+                  onsubmit="return customConfirm(event, 'Restore လုပ်မလား? လက်ရှိ data ကို replace လုပ်မယ်။', 'danger');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn warn tiny" type="submit">Restore</button>
+            </form>
+            <form method="post" action="{{ url_for('admin.backups_delete', name=b.name) }}"
+                  style="display:inline;"
+                  onsubmit="return customConfirm(event, 'ဖျက်မလား?', 'danger');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn danger tiny" type="submit">{{ icons.icon('trash', 12) }}</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    {{ icons.icon('folder', 40) }}
+    <p>Backup မရှိသေးပါ။ "Create" ကို နှိပ်ပါ။</p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="card-title">{{ icons.icon('info', 18) }} Backup ထဲမှာ ဘာတွေ ပါလဲ</h2>
+  <ul style="color:var(--text-mid);font-size:14px;line-height:1.7;padding-left:20px;">
+    <li>Database (SQLite file)</li>
+    <li>Uploads directory (files, photos, Excel)</li>
+    <li>meta.json (backup info)</li>
+  </ul>
+  <p class="muted">
+    ⚠️ Restore လုပ်တဲ့အခါ လက်ရှိ DB ကို <strong>safety backup</strong> အဖြစ် အလိုအလျောက် သိမ်းထားပါတယ်။
+  </p>
+</div>
+
+{% endblock %}

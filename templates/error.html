@@ -1,0 +1,37 @@
+{% import "partials/icons.html" as icons %}
+<!doctype html>
+<html lang="my" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d12">
+  <title>Error {{ status }} — AI Digital Brain</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <script>
+    (function(){ try{
+      var t = localStorage.getItem('adb.theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    }catch(e){} })();
+  </script>
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    .err-wrap { max-width: 440px; text-align: center; }
+    .err-icon {
+      width: 72px; height: 72px; margin: 0 auto 20px;
+      border-radius: 20px; background: var(--danger-bg); color: var(--danger);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .err-icon svg { width: 36px; height: 36px; }
+    .err-code { font-size: 48px; font-weight: 700; color: var(--text); margin: 0 0 8px; letter-spacing: -.02em; }
+    .err-msg { color: var(--text-dim); font-size: 15px; margin: 0 0 24px; }
+  </style>
+</head>
+<body>
+  <div class="err-wrap">
+    <div class="err-icon">{{ icons.icon('alert-triangle', 36) }}</div>
+    <h1 class="err-code">{{ status }}</h1>
+    <p class="err-msg">{{ message }}</p>
+    <a class="btn" href="/">← ပင်မစာမျက်နှာ</a>
+  </div>
+</body>
+</html>

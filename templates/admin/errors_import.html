@@ -1,0 +1,172 @@
+{% extends "partials/base.html" %}
+{% set help_key = "errors" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Import Error Knowledge{% endblock %}
+{% block content %}
+
+{% if mode == "input" %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('alert-triangle', 22) }} Import Error Knowledge</h1>
+      <p class="card-subtitle">
+        Error Troubleshooting Excel ဖိုင်ကို upload လုပ်ပါ။
+        Machine Name ကို ဒီမှာ ထည့်ရင် row အားလုံးမှာ auto-apply ဖြစ်မယ်။
+      </p>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-group">
+      <label>Shop *</label>
+      <select name="shop" required>
+        <option value="">— Select —</option>
+        {% for s in shops %}<option value="{{ s.code }}">{{ s.code }}</option>{% endfor %}
+      </select>
+    </div>
+
+    <div class="row">
+      <div class="form-group" style="flex:2;">
+        <label>Machine Name (applies to all rows)</label>
+        <input type="text" name="machine_name" maxlength="255"
+               placeholder="Dragon Blade">
+        <div class="field-hint">ဥပမာ: Dragon Blade, Carnival Circus</div>
+      </div>
+      <div class="form-group">
+        <label>Model</label>
+        <input type="text" name="model" maxlength="128">
+      </div>
+      <div class="form-group">
+        <label>Unit</label>
+        <input type="text" name="unit" maxlength="64" placeholder="(optional)">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Excel File * (.xlsx)</label>
+      <input type="file" name="file" accept=".xlsx,.xlsm,.xls" required>
+      <div class="field-hint">
+        Sheet header တွေမှာ <code>Error Message</code>,
+        <code>ဖြေရှင်းနည်း</code> စတာတွေ ပါရမယ်။
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn" type="submit">{{ icons.icon('upload', 16) }} Upload & Preview</button>
+      <a class="btn ghost" href="{{ url_for('admin.errors_list') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+
+{% elif mode == "preview" %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('search', 22) }} Preview</h1>
+      <p class="card-subtitle">
+        {{ source_filename }} · Shop <span class="pill accent">{{ shop.code }}</span>
+        · Sheets <span class="pill">{{ result.sheets|length }}</span>
+        · Rows <span class="pill accent">{{ result.candidates|length }}</span>
+      </p>
+    </div>
+  </div>
+
+  {% for w in result.warnings %}
+    <div class="flash warning">{{ w }}</div>
+  {% endfor %}
+
+  {% if machine_name %}
+    <div class="flash info">
+      Machine <strong>{{ machine_name }}</strong> ကို row အားလုံးမှာ auto-apply လုပ်မယ်။
+    </div>
+  {% else %}
+    <div class="flash warning">
+      Machine Name ထည့်ထားခြင်း မရှိပါ — row တိုင်းမှာ ကိုယ်တိုင် ထည့်ရမယ်။
+    </div>
+  {% endif %}
+</div>
+
+{% if result.candidates %}
+<form method="post" action="{{ url_for('admin.errors_import_save') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="shop" value="{{ shop.code }}">
+  <input type="hidden" name="default_machine" value="{{ machine_name }}">
+  <input type="hidden" name="default_model" value="{{ model }}">
+  <input type="hidden" name="default_unit" value="{{ unit }}">
+  <input type="hidden" name="source_file" value="{{ source_filename }}">
+
+  {% for c in result.candidates %}
+  <div class="card">
+    <div class="card-head">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--text);">
+        <input type="checkbox" name="selected" value="{{ loop.index0 }}" checked
+               style="width:auto;margin:0;">
+        <strong>#{{ loop.index }}</strong>
+        {% if c.no %}<span class="pill">No. {{ c.no }}</span>{% endif %}
+        <span class="pill">row {{ c.row_number }}</span>
+      </label>
+    </div>
+
+    <div class="row">
+      <div class="form-group" style="flex:1;min-width:120px;">
+        <label>Machine Name</label>
+        <input type="text" name="row_{{ loop.index0 }}_machine" maxlength="255"
+               value="{{ machine_name }}"
+               placeholder="(ဒီနေရာမှာ ထည့်ပါ)">
+      </div>
+      <div class="form-group">
+        <label>Model</label>
+        <input type="text" name="row_{{ loop.index0 }}_model" maxlength="128"
+               value="{{ model }}">
+      </div>
+      <div class="form-group">
+        <label>Unit</label>
+        <input type="text" name="row_{{ loop.index0 }}_unit" maxlength="64"
+               value="{{ unit }}" placeholder="(optional)">
+      </div>
+      <div class="form-group">
+        <label>Error Code (auto)</label>
+        <input type="text" name="row_{{ loop.index0 }}_error_code" maxlength="64"
+               value="{{ c.error_code }}">
+        <div class="field-hint">Excel ထဲက Error Name ကနေ auto-ထုတ်ထားတယ်။</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" name="row_{{ loop.index0 }}_title" maxlength="512"
+             value="{{ c.title }}">
+    </div>
+
+    <div class="form-group">
+      <label>Content</label>
+      <textarea name="row_{{ loop.index0 }}_content" rows="8">{{ c.content }}</textarea>
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="card">
+    <div class="form-actions" style="border:0;padding-top:0;">
+      <button class="btn success" type="submit">
+        {{ icons.icon('check', 16) }} Save {{ result.candidates|length }} as PENDING
+      </button>
+      <a class="btn ghost" href="{{ url_for('admin.errors_import') }}">← Back</a>
+    </div>
+  </div>
+</form>
+{% else %}
+<div class="card">
+  <div class="empty">
+    {{ icons.icon('alert-triangle', 40) }}
+    <p>Error row မတွေ့ပါ။ Header တွေကို စစ်ပါ။</p>
+  </div>
+  <div class="form-actions" style="border:0;justify-content:center;">
+    <a class="btn ghost" href="{{ url_for('admin.errors_import') }}">← Back</a>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
+{% endblock %}

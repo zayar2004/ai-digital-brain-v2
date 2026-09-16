@@ -1,0 +1,178 @@
+{% extends "partials/base.html" %}
+{% set help_key = "errors" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Error Knowledge{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('alert-triangle', 22) }} Error Knowledge</h1>
+      <p class="card-subtitle">{{ pagination.total }} · Official troubleshooting knowledge</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a class="btn ghost tiny" href="{{ url_for('admin.error_cases_list') }}">
+        {{ icons.icon('clipboard-list', 14) }} Cases
+      </a>
+      <a class="btn ghost tiny" href="{{ url_for('admin.errors_import') }}">
+        {{ icons.icon('upload', 14) }} Import Excel
+      </a>
+      <a class="btn" href="{{ url_for('admin.error_new') }}">
+        {{ icons.icon('plus', 16) }} New
+      </a>
+    </div>
+  </div>
+
+  <form method="get" class="toolbar">
+    <div class="field">
+      <label>Shop</label>
+      <select name="shop">
+        <option value="">— All —</option>
+        {% for s in shops %}
+          <option value="{{ s.code }}" {{ 'selected' if current_shop == s.code }}>{{ s.code }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label>Status</label>
+      <select name="status">
+        <option value="">— All —</option>
+        {% for st in ['DRAFT','PENDING','APPROVED','ARCHIVED'] %}
+          <option value="{{ st }}" {{ 'selected' if current_status == st }}>{{ st }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field" style="flex:2;">
+      <label>Search</label>
+      <input type="text" name="q" value="{{ q }}">
+    </div>
+    <button class="btn secondary" type="submit">{{ icons.icon('search', 16) }} Filter</button>
+  </form>
+
+  {% if pagination.items %}
+  <form method="post" action="{{ url_for('admin.errors_bulk_approve') }}" id="bulk-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="toolbar" style="margin-bottom:10px;">
+      <button type="button" class="btn ghost tiny" onclick="selectAll(true)">☑ Select All</button>
+      <button type="button" class="btn ghost tiny" onclick="selectAll(false)">☐ Clear</button>
+      <button type="button" class="btn ghost tiny" onclick="selectOnlyPending()">
+        🟡 Select PENDING only
+      </button>
+      <div style="flex:1;"></div>
+      <button type="submit" class="btn success"
+              onclick="return customConfirm(event, 'Selected items ကို Approve လုပ်မလား?', 'success');">
+        {{ icons.icon('check', 16) }} Approve Selected
+      </button>
+      <button type="button" class="btn danger"
+        onclick="bulkDelete();">
+        🗑️ Delete Selected
+      </button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width:30px;"><input type="checkbox" id="chk-all" onchange="selectAll(this.checked)" style="width:auto;"></th>
+            <th>Shop</th><th>Code</th><th>Name</th><th>Machine</th><th>Status</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in pagination.items %}
+          <tr data-status="{{ e.status }}">
+            <td>
+                {% if current_user.role in ['SUPER_ADMIN','ADMIN'] %}
+                <input type="checkbox" name="selected" value="{{ e.id }}" style="width:auto;">
+              {% endif %}
+            </td>
+            <td><span class="pill accent">{{ e.shop.code if e.shop else '—' }}</span></td>
+            <td><span class="code">{{ e.error_code or '—' }}</span></td>
+            <td>{{ e.error_name or '—' }}</td>
+            <td class="muted">{{ e.machine_name or '—' }}</td>
+            <td>
+              {% if e.status == 'APPROVED' %}<span class="pill ok">{{ e.status }}</span>
+              {% elif e.status == 'PENDING' %}<span class="pill warn">{{ e.status }}</span>
+              {% else %}<span class="pill">{{ e.status }}</span>{% endif %}
+            </td>
+            <td>
+              <a class="btn ghost tiny" href="{{ url_for('admin.error_edit', error_id=e.id) }}">
+                {{ icons.icon('edit', 12) }}
+              </a>
+                        {% if current_user.role in ['SUPER_ADMIN','ADMIN'] %}
+                        <button type="button"
+                                class="btn ghost tiny" style="color:#e74c3c;" title="Delete"
+                                onclick="deleteError({{ e.id }});">🗑️</button>
+                        {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </form>
+
+  <div class="pagination">
+    <span class="info">Showing {{ pagination.items|length }} of {{ pagination.total }}</span>
+    {% if pagination.has_prev %}
+      <a class="btn ghost tiny" href="{{ url_for('admin.errors_list', page=pagination.prev_num, shop=current_shop, status=current_status, q=q) }}">← Prev</a>
+    {% endif %}
+    {% if pagination.has_next %}
+      <a class="btn ghost tiny" href="{{ url_for('admin.errors_list', page=pagination.next_num, shop=current_shop, status=current_status, q=q) }}">Next →</a>
+    {% endif %}
+  </div>
+
+  <script>
+  function selectAll(checked) {
+    document.querySelectorAll('input[name="selected"]').forEach(cb => cb.checked = checked);
+  }
+  function selectOnlyPending() {
+    document.querySelectorAll('tbody tr').forEach(tr => {
+      const cb = tr.querySelector('input[name="selected"]');
+      if (!cb) return;
+      cb.checked = (tr.dataset.status === 'PENDING');
+    });
+  }
+  function deleteError(id) {
+    if (!confirm('ဒီ knowledge ဖျက်မှာလား? ပြန်ယူလို့ မရပါ။')) return;
+    const f = document.createElement('form');
+    f.method = 'POST';
+    f.action = '/errors/' + id + '/delete';
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = 'csrf_token';
+    csrf.value = '{{ csrf_token() }}';
+    f.appendChild(csrf);
+    document.body.appendChild(f);
+    f.submit();
+  }
+  function bulkDelete() {
+    const ids = Array.from(document.querySelectorAll('input[name="selected"]:checked')).map(cb => cb.value);
+    if (!ids.length) { alert('ဖျက်ဖို့ row တွေ ရွေးပါ။'); return; }
+    if (!confirm('Selected ' + ids.length + ' ခု ဖျက်မှာလား? ပြန်ယူလို့ မရပါ။')) return;
+    const f = document.createElement('form');
+    f.method = 'POST';
+    f.action = '/errors/bulk-delete';
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = 'csrf_token';
+    csrf.value = '{{ csrf_token() }}';
+    f.appendChild(csrf);
+    ids.forEach(id => {
+      const i = document.createElement('input');
+      i.type = 'hidden';
+      i.name = 'selected';
+      i.value = id;
+      f.appendChild(i);
+    });
+    document.body.appendChild(f);
+    f.submit();
+  }
+  </script>
+
+  {% else %}
+  <div class="empty">{{ icons.icon('alert-triangle', 40) }}<p>No error knowledge yet.</p></div>
+  {% endif %}
+</div>
+
+{% endblock %}

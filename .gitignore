@@ -1,0 +1,48 @@
+.env
+.env.*
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+env/
+instance/
+*.db
+*.sqlite
+*.sqlite3
+logs/
+*.log
+uploads/documents/*
+uploads/excel/*
+uploads/pdf/*
+uploads/word/*
+uploads/photos/*
+!uploads/**/.gitkeep
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Backups
+*.bak_*
+*.bak
+*_FAILOVER_*
+backups/
+
+# Portable builds
+portable_*/
+portable.zip
+
+# PID files
+*.pid
+
+# Test files
+*_test.xlsx
+
+# Code backups/variants
+*.bak*
+*.broken
+*.messy
+*.old
+*~

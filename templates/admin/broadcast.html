@@ -1,0 +1,573 @@
+{% extends "partials/base.html" %}
+{% set help_key = "broadcast" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Broadcast — AI Digital Brain{% endblock %}
+{% block content %}
+
+<style>
+  .chat-wrap {
+    max-width: 720px; margin: 0 auto;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-2);
+  }
+  .chat-header {
+    padding: 14px 18px;
+    background: linear-gradient(135deg, rgba(99,102,241,.15), rgba(99,102,241,.05));
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .chat-header .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 16px;
+  }
+  .chat-header .title {
+    flex: 1;
+  }
+  .chat-header .title .name { font-weight: 600; font-size: 15px; }
+  .chat-header .title .meta { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+  .chat-body {
+    padding: 20px;
+    min-height: 200px;
+    max-height: 55vh;
+    overflow-y: auto;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(99,102,241,.04), transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(99,102,241,.03), transparent 40%);
+  }
+
+  .bubble {
+    background: var(--accent-2);
+    color: #fff;
+    padding: 12px 16px;
+    border-radius: 18px 18px 4px 18px;
+    margin-left: auto;
+    margin-bottom: 12px;
+    max-width: 85%;
+    font-size: 14px;
+    line-height: 1.5;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    box-shadow: 0 2px 6px rgba(99,102,241,.25);
+  }
+  .bubble-meta {
+    text-align: right; font-size: 11px;
+    color: rgba(255,255,255,.7);
+    margin-top: 4px;
+  }
+  .bubble-photos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 6px;
+    margin-bottom: 8px;
+    max-width: 85%;
+    margin-left: auto;
+  }
+  .bubble-photos img {
+    width: 100%; height: 120px; object-fit: cover;
+    border-radius: 12px 12px 6px 6px;
+    border: 1px solid rgba(255,255,255,.15);
+  }
+  .bubble-photos.single img { height: 200px; }
+
+  .typing-dots {
+    display: inline-flex; gap: 4px; align-items: center;
+    color: var(--text-dim); font-size: 13px;
+    padding: 8px 14px;
+    background: var(--bg-3);
+    border-radius: 18px 18px 18px 4px;
+    width: fit-content;
+  }
+  .typing-dots span {
+    width: 6px; height: 6px; background: var(--text-dim);
+    border-radius: 50%; animation: dotPulse 1.2s infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: .2s; }
+  .typing-dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes dotPulse {
+    0%, 60%, 100% { opacity: .3; }
+    30% { opacity: 1; }
+  }
+
+  .chat-footer {
+    padding: 12px;
+    background: var(--bg-3);
+    border-top: 1px solid var(--border);
+  }
+  .chat-input {
+    display: flex; gap: 8px; align-items: flex-end;
+  }
+  .chat-input textarea {
+    flex: 1; resize: none;
+    min-height: 40px; max-height: 120px;
+    border-radius: 20px;
+    padding: 10px 16px;
+    margin: 0;
+  }
+  .chat-input .send-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--accent-2);
+    color: #fff; border: 0;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 18px;
+    transition: transform .1s;
+  }
+  .chat-input .send-btn:hover { transform: scale(1.08); }
+  .chat-input .attach-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-mid); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 18px;
+  }
+  .photo-previews {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .photo-previews .pp {
+    position: relative;
+    border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .photo-previews .pp img {
+    width: 100%; height: 80px; object-fit: cover; display: block;
+  }
+  .photo-previews .pp .rm {
+    position: absolute; top: 3px; right: 3px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: rgba(0,0,0,.7); color: #fff;
+    border: 0; cursor: pointer; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .photo-previews .pp .num {
+    position: absolute; bottom: 3px; left: 3px;
+    background: rgba(0,0,0,.7); color: #fff;
+    font-size: 10px; padding: 1px 6px; border-radius: 6px;
+  }
+
+  .recipient-info {
+    text-align: center; font-size: 12px;
+    color: var(--text-dim);
+    padding: 8px 0;
+  }
+  .recipient-info strong { color: var(--accent); }
+
+  /* ========== Custom Confirm Modal ========== */
+  .cfm-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.65);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 999;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    animation: cfmFadeIn .18s ease;
+  }
+  @keyframes cfmFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .cfm-card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px 22px 20px;
+    width: 100%; max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    animation: cfmSlide .22s cubic-bezier(.34,1.56,.64,1);
+    text-align: center;
+  }
+  @keyframes cfmSlide {
+    from { transform: translateY(20px) scale(.95); opacity: 0; }
+    to   { transform: none; opacity: 1; }
+  }
+  .cfm-icon {
+    width: 60px; height: 60px; margin: 0 auto 12px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(99,102,241,.2), rgba(99,102,241,.05));
+    border: 1px solid rgba(99,102,241,.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+  }
+  .cfm-title {
+    margin: 0 0 6px; font-size: 18px; font-weight: 600;
+    color: var(--text);
+  }
+  .cfm-text {
+    margin: 0 0 16px; font-size: 14px;
+    color: var(--text-dim); line-height: 1.5;
+  }
+  .cfm-text strong { color: var(--accent); }
+
+  .cfm-preview {
+    background: var(--bg-3);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 18px;
+    text-align: left;
+    font-size: 13px;
+    color: var(--text-mid);
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .cfm-preview .cfm-msg {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin-bottom: 8px;
+  }
+  .cfm-preview .cfm-photos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .cfm-preview .cfm-photos img {
+    width: 100%; height: 60px; object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  .cfm-actions {
+    display: flex; gap: 10px;
+    justify-content: center;
+  }
+  .cfm-actions .btn {
+    min-width: 120px;
+    justify-content: center;
+  }
+</style>
+
+<div class="chat-wrap">
+  <div class="chat-header">
+    <div class="avatar">A</div>
+    <div class="title">
+      <div class="name">📢 Broadcast to Verified Users</div>
+      <div class="meta">
+        <strong>{{ all_count }}</strong> verified users will receive this
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-body" id="chat-body">
+    <div class="typing-dots">
+      <span></span><span></span><span></span>
+      <span style="margin-left:8px;">Preview: သင့်စာ/ပုံ ပေါ်လာမယ်</span>
+    </div>
+  </div>
+
+  <div class="chat-footer">
+    <form method="post" enctype="multipart/form-data" id="b-form"
+      onsubmit="return validateBroadcast(event);">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="row" style="margin-bottom:8px;">
+        <div class="form-group" style="flex:1;margin:0;">
+          <label style="font-size:11px;">Filter Shop (optional)</label>
+          <select name="shop" style="margin:0;padding:6px 10px;font-size:13px;">
+            <option value="">— All users —</option>
+            {% for s in shops %}
+              <option value="{{ s.code }}">Only {{ s.code }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="photo-previews" id="photo-previews"></div>
+
+      <div class="chat-input">
+        <input type="file" name="photos" id="photos-input"
+               accept="image/*" multiple hidden
+               onchange="onPhotosChange(this)">
+
+        <button type="button" class="attach-btn" title="Add photos"
+                onclick="document.getElementById('photos-input').click()">
+          📎
+        </button>
+
+        <textarea name="message" id="message-input"
+                  placeholder="Type a broadcast message..."
+                  oninput="updatePreview()"
+                  onkeydown="onKeyDown(event)"></textarea>
+
+        <button type="submit" class="send-btn" title="Send"
+                data-no-patch="1">
+          ➤
+        </button>
+      </div>
+
+      <div class="recipient-info">
+        Max <strong>10 photos</strong> · Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for new line
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <h2 class="card-title">📜 Recent Broadcasts</h2>
+  {% if history %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr><th>#</th><th>Message</th><th>Photo</th><th>Sent</th><th>Status</th><th>When</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for b in history %}
+        <tr>
+          <td class="muted">#{{ b.id }}</td>
+          <td>
+            {{ (b.message or '')[:50] }}{% if b.message and b.message|length > 50 %}…{% endif %}
+          </td>
+          <td>
+            {% if b.has_photo %}
+              <span class="pill accent">📷 {{ b.photos_rel|length }}</span>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            <span class="pill ok">{{ b.sent_count }}</span>
+            {% if b.failed_count %}<span class="pill danger">✗ {{ b.failed_count }}</span>{% endif %}
+            / {{ b.recipient_count }}
+          </td>
+          <td>
+            {% if b.status == 'SENT' %}<span class="pill ok">{{ b.status }}</span>
+            {% elif b.status == 'PARTIAL' %}<span class="pill warn">{{ b.status }}</span>
+            {% elif b.status == 'FAILED' %}<span class="pill danger">{{ b.status }}</span>
+            {% else %}<span class="pill">{{ b.status }}</span>{% endif %}
+          </td>
+          <td class="muted">
+            {{ b.sent_at.strftime('%Y-%m-%d %H:%M') if b.sent_at else (b.created_at.strftime('%Y-%m-%d %H:%M') if b.created_at else '') }}
+          </td>
+          <td>
+            <a class="btn ghost tiny" href="{{ url_for('admin.broadcast_detail', bid=b.id) }}">View</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">{{ icons.icon('inbox', 40) }}<p>Broadcast မရှိသေးပါ။</p></div>
+  {% endif %}
+</div>
+
+<script>
+var selectedFiles = [];
+
+function onPhotosChange(input) {
+  var files = Array.from(input.files || []);
+  if (files.length > 10) {
+    alert('အများဆုံး 10 ပုံပဲ ရွေးလို့ရတယ်။ ပထမ 10 ပုံပဲ သိမ်းမယ်။');
+    files = files.slice(0, 10);
+  }
+  selectedFiles = files;
+  renderPreviews();
+  updatePreview();
+}
+
+function renderPreviews() {
+  var box = document.getElementById('photo-previews');
+  box.innerHTML = '';
+  selectedFiles.forEach(function(f, i) {
+    var url = URL.createObjectURL(f);
+    var d = document.createElement('div');
+    d.className = 'pp';
+    d.innerHTML = '<img src="' + url + '">' +
+      '<button type="button" class="rm" onclick="removePhoto(' + i + ')">✕</button>' +
+      '<div class="num">#' + (i+1) + '</div>';
+    box.appendChild(d);
+  });
+}
+
+function removePhoto(i) {
+  selectedFiles.splice(i, 1);
+  // Can't easily reset input.files, so keep array and override submit
+  renderPreviews();
+  updatePreview();
+}
+
+function updatePreview() {
+  var box = document.getElementById('chat-body');
+  var msg = document.getElementById('message-input').value;
+  var html = '';
+
+  if (selectedFiles.length > 0) {
+    html += '<div class="bubble-photos ' + (selectedFiles.length === 1 ? 'single' : '') + '">';
+    selectedFiles.forEach(function(f) {
+      var url = URL.createObjectURL(f);
+      html += '<img src="' + url + '">';
+    });
+    html += '</div>';
+  }
+
+  if (msg || selectedFiles.length > 0) {
+    html += '<div class="bubble">';
+    html += escapeHtml(msg || '(photo only)');
+    html += '<div class="bubble-meta">Now · Preview</div>';
+    html += '</div>';
+  } else {
+    html = '<div class="typing-dots"><span></span><span></span><span></span>' +
+           '<span style="margin-left:8px;">Preview: သင့်စာ/ပုံ ပေါ်လာမယ်</span></div>';
+  }
+
+  box.innerHTML = html;
+  box.scrollTop = box.scrollHeight;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function onKeyDown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById('b-form').requestSubmit();
+  }
+}
+
+function openConfirm() {
+  var msg = document.getElementById('message-input').value.trim();
+  var shop = document.querySelector('select[name=shop]').value;
+  var n = {{ all_count }};
+
+  if (!msg && selectedFiles.length === 0) {
+    if (window.alertDialog) {
+      alertDialog({title: 'Missing', message: 'စာ ဒါမှမဟုတ် ပုံ တစ်ခုခု ထည့်ပါ။', kind: 'warn'});
+    } else {
+      alert('စာ ဒါမှမဟုတ် ပုံ တစ်ခုခု ထည့်ပါ။');
+    }
+    return;
+  }
+
+  // Build confirmation message
+  var line1 = shop ? ('Send to only ' + shop + ' shop users?') : ('Send to ' + n + ' verified users?');
+  var preview = '';
+  if (msg) preview += msg;
+  if (selectedFiles.length > 0) {
+    if (preview) preview += '\n';
+    preview += '📷 ' + selectedFiles.length + ' photo' + (selectedFiles.length > 1 ? 's' : '');
+  }
+  var fullMsg = line1;
+  if (preview) fullMsg += '\n\n' + preview;
+
+  // Use global modal
+  if (window.confirmDialog) {
+    window.confirmDialog({
+      title: '📢 Send Broadcast?',
+      message: fullMsg,
+      kind: 'info',
+      okText: '✓ Send Now',
+      cancelText: 'Cancel',
+    }).then(function (ok) {
+      if (ok) doSubmit();
+    });
+  } else {
+    // Fallback
+    if (confirm(fullMsg)) doSubmit();
+  }
+}
+
+function doSubmit() {
+  var form = document.getElementById('b-form');
+  if (form) form.submit();
+}
+
+// ESC to close
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeConfirm();
+});
+
+// Auto-resize textarea
+document.getElementById('message-input').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+<!-- Custom Confirm Modal -->
+<div id="confirm-modal" class="cfm-backdrop" style="display:none;">
+  <div class="cfm-card">
+    <div class="cfm-icon">📢</div>
+    <h3 class="cfm-title">Send Broadcast?</h3>
+    <p class="cfm-text" id="cfm-text">Send to verified users?</p>
+
+    <div class="cfm-preview" id="cfm-preview"></div>
+
+    <div class="cfm-actions">
+      <button type="button" class="btn ghost" onclick="closeConfirm()">Cancel</button>
+      <button type="button" class="btn" onclick="doSubmit()">✓ Send Now</button>
+    </div>
+  </div>
+</div>
+
+
+// ★ Attach send button handler (bulletproof)
+document.addEventListener('DOMContentLoaded', function () {
+  var btn = document.getElementById('btn-send-broadcast');
+  if (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        openConfirm();
+      } catch (err) {
+        console.error('openConfirm failed:', err);
+        alert('Error: ' + err.message);
+      }
+    });
+  }
+});
+
+
+
+// ================================================================
+// Broadcast validation (called from form onsubmit)
+// ================================================================
+function validateBroadcast(event) {
+  var msg = document.getElementById('message-input').value.trim();
+  var hasPhotos = selectedFiles.length > 0;
+
+  if (!msg && !hasPhotos) {
+    event.preventDefault();
+    alert('စာ ဒါမှမဟုတ် ပုံ တစ်ခုခု ထည့်ပါ။');
+    return false;
+  }
+
+  var n = {{ all_count }};
+  var shop = document.querySelector('select[name=shop]').value;
+  var confirmMsg = shop
+    ? ('Send to only ' + shop + ' users?')
+    : ('Send to ' + n + ' verified users?');
+
+  // Try custom modal first
+  if (window.confirmDialog) {
+    event.preventDefault();
+    window.confirmDialog({
+      title: '📢 Send Broadcast?',
+      message: confirmMsg + (msg ? '\n\n' + msg.substring(0, 150) : ''),
+      kind: 'info',
+      okText: '✓ Send Now',
+    }).then(function (ok) {
+      if (ok) {
+        var form = document.getElementById('b-form');
+        form.removeAttribute('onsubmit');
+        form.submit();
+      }
+    });
+    return false;
+  }
+
+  // Fallback: browser confirm
+  if (!confirm(confirmMsg)) {
+    event.preventDefault();
+    return false;
+  }
+  return true;
+}
+</script>
+
+{% endblock %}

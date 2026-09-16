@@ -1,0 +1,155 @@
+{% extends "partials/base.html" %}
+{% set help_key = "ingest" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Ingest Documents{% endblock %}
+{% block content %}
+
+{% if mode == "input" %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('inbox', 22) }} Ingest Documents</h1>
+      <p class="card-subtitle">
+        PDF / DOCX / Excel / TXT ဖိုင်တွေကို upload လုပ်ပါ။
+        System က စာသားတွေ ခွဲထုတ်ပြီး knowledge candidates ဖန်တီးပေးပါမယ်။
+      </p>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-group">
+      <label>Shop *</label>
+      <select name="shop" required>
+        <option value="">— Select —</option>
+        {% for s in shops %}<option value="{{ s.code }}">{{ s.code }}</option>{% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Machine Name (applies to all rows, optional)</label>
+      <input type="text" name="machine_hint" maxlength="255"
+             placeholder="ဥပမာ: Dragon Blade">
+      <div class="field-hint">
+        ဖိုင်နာမည်ကနေ auto-ထုတ်လို့ရရင် ဒီနေရာမှာ ထည့်စရာ မလိုပါ။
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>File * (PDF / DOCX / XLSX / TXT)</label>
+      <input type="file" name="file" required accept=".pdf,.docx,.xlsx,.xlsm,.xls,.txt,.md">
+    </div>
+
+    <div class="form-actions">
+      <button class="btn" type="submit">{{ icons.icon('upload', 16) }} Upload & Extract</button>
+      <a class="btn ghost" href="{{ url_for('admin.knowledge_list') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+
+{% elif mode == "preview" %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('search', 22) }} Preview</h1>
+      <p class="card-subtitle">
+        {{ doc.original_filename }}
+        · Shop <span class="pill accent">{{ shop.code }}</span>
+        · Type <span class="pill">{{ doc.source_type }}</span>
+        · Pages <span class="pill">{{ doc.pages_or_sheets }}</span>
+        · Candidates <span class="pill accent">{{ doc.candidates|length }}</span>
+      </p>
+    </div>
+  </div>
+
+  {% if doc.warnings %}
+    {% for w in doc.warnings %}
+      <div class="flash info">{{ w }}</div>
+    {% endfor %}
+  {% endif %}
+</div>
+
+{% if doc.candidates %}
+<form method="post" action="{{ url_for('admin.ingest_document_save') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="shop" value="{{ shop.code }}">
+  <input type="hidden" name="source_file" value="{{ doc.original_filename }}">
+
+  {% for c in doc.candidates %}
+  <div class="card">
+    <div class="card-head">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--text);">
+        <input type="checkbox" name="selected" value="{{ loop.index0 }}" checked
+               style="width:auto;margin:0;">
+        <strong>#{{ loop.index }}</strong>
+        {% if c.no %}<span class="pill">No. {{ c.no }}</span>{% endif %}
+        <span class="pill">{{ c.source_type }}</span>
+        {% if c.source_sheet %}<span class="pill">sheet: {{ c.source_sheet }}</span>{% endif %}
+        {% if c.source_row %}<span class="pill">r.{{ c.source_row }}</span>{% endif %}
+        {% if c.confidence >= 0.8 %}<span class="pill ok">conf {{ '%.2f'|format(c.confidence) }}</span>
+        {% elif c.confidence >= 0.5 %}<span class="pill warn">conf {{ '%.2f'|format(c.confidence) }}</span>
+        {% else %}<span class="pill danger">conf {{ '%.2f'|format(c.confidence) }}</span>{% endif %}
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" name="cand_{{ loop.index0 }}_title" value="{{ c.title }}">
+    </div>
+
+    <div class="row">
+      <div class="form-group" style="flex:1;min-width:120px;">
+        <label>Machine Name</label>
+        <input type="text" name="cand_{{ loop.index0 }}_machine"
+               value="{{ c.machine_name or c.machine_hint or '' }}"
+               placeholder="Dragon Blade">
+      </div>
+      <div class="form-group">
+        <label>Model</label>
+        <input type="text" name="cand_{{ loop.index0 }}_model" value="">
+      </div>
+      <div class="form-group">
+        <label>Unit</label>
+        <input type="text" name="cand_{{ loop.index0 }}_unit"
+               value="{{ c.unit or '' }}">
+      </div>
+      <div class="form-group">
+        <label>Error Code</label>
+        <input type="text" name="cand_{{ loop.index0 }}_error_code"
+               value="{{ c.error_code or '' }}">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Content</label>
+      <textarea name="cand_{{ loop.index0 }}_content" rows="6">{{ c.content }}</textarea>
+    </div>
+
+    <input type="hidden" name="cand_{{ loop.index0 }}_source_type" value="{{ c.source_type }}">
+    <input type="hidden" name="cand_{{ loop.index0 }}_source_page" value="{{ c.source_page or '' }}">
+    <input type="hidden" name="cand_{{ loop.index0 }}_source_sheet" value="{{ c.source_sheet or '' }}">
+    <input type="hidden" name="cand_{{ loop.index0 }}_source_row" value="{{ c.source_row or '' }}">
+  </div>
+  {% endfor %}
+
+  <div class="card">
+    <div class="form-actions" style="border:0;padding-top:0;">
+      <button class="btn success" type="submit">
+        {{ icons.icon('check', 16) }} Save {{ doc.candidates|length }} as PENDING
+      </button>
+      <a class="btn ghost" href="{{ url_for('admin.ingest_document_page') }}">← Back</a>
+    </div>
+  </div>
+</form>
+{% else %}
+<div class="card">
+  <div class="empty">{{ icons.icon('inbox', 40) }}<p>Candidate မတွေ့ပါ။</p></div>
+  <div class="form-actions" style="border:0;justify-content:center;">
+    <a class="btn ghost" href="{{ url_for('admin.ingest_document_page') }}">← Back</a>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
+{% endblock %}

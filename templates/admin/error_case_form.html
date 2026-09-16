@@ -1,0 +1,85 @@
+{% extends "partials/base.html" %}
+{% set help_key = "error_cases" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}New Error Case{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('clipboard-list', 22) }} New Error Case</h1>
+      <p class="card-subtitle">
+        ဖြစ်ပျက်ခဲ့တဲ့ real-world case တစ်ခုကို မှတ်တမ်းတင်ပါ။
+        ဒါဟာ <strong>ယခင် case</strong> ဖြစ်ပြီး — universal rule မဟုတ်ပါ။
+      </p>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-group">
+      <label>Shop *</label>
+      <select name="shop" required>
+        <option value="">— Select —</option>
+        {% for s in shops %}<option value="{{ s.code }}">{{ s.code }}</option>{% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Error Code</label>
+      <input type="text" name="error_code" maxlength="64" placeholder="07">
+    </div>
+
+    <div class="form-group">
+      <label>Machine Name</label>
+      <input type="text" name="machine_name" maxlength="255" placeholder="Carnival Circus">
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label>Model</label>
+        <input type="text" name="model" maxlength="128">
+      </div>
+      <div class="form-group">
+        <label>Unit</label>
+        <input type="text" name="unit" maxlength="64" placeholder="P3">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Problem (what Admin reported)</label>
+      <textarea name="problem" rows="3" placeholder="Carnival circus P3 Error 07 ပေါ်နေသည်"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Finding (what was found)</label>
+      <textarea name="finding" rows="3" placeholder="coin ချပေးသော coin ခွက်တွင် coin ကုန်နေသည်"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Action Taken</label>
+      <textarea name="action_taken" rows="3" placeholder="coin ပြန်ဖြည့်ပေးလိုက်သည်"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Result</label>
+      <textarea name="result" rows="2" placeholder="အဆင်ပြေသွားသည်"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Original / Myanmar text (optional)</label>
+      <textarea name="myanmar_content" rows="4" placeholder="(အကယ်၍ စာသားအပြည့်အစုံ သိမ်းလိုပါက)"></textarea>
+    </div>
+
+    <!-- ★ Photo upload (up to 10) -->
+                <div class="form-group">
+                    <label>Photos (optional, up to 10)</label>
+                    <input type="file" name="photos" accept="image/*" multiple>
+                    <small class="hint">Gallery ကနေ ပုံ ၁၀ ပုံအထိ ရွေးနိုင်သည် (တစ်ပုံ max 5 MB)</small>
+                </div>
+
+                <div class="form-actions">
+      <button class="btn" type="submit">{{ icons.icon('check', 16) }} Save as PENDING</button>
+      <a class="btn ghost" href="{{ url_for('admin.error_cases_list') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

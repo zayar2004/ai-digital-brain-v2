@@ -1,0 +1,80 @@
+{% extends "partials/base.html" %}
+{% set help_key = "errors" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}{{ 'Edit' if mode == 'edit' else 'New' }} Error Knowledge{% endblock %}
+{% block content %}
+
+{% set d = form_data if form_data else {} %}
+{% set e = error %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">
+        {{ icons.icon('alert-triangle', 22) }}
+        {{ 'Edit Error Knowledge' if mode == 'edit' else 'New Error Knowledge' }}
+      </h1>
+    </div>
+  </div>
+
+  <form method="post" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    {% if mode == 'new' %}
+    <div class="form-group">
+      <label>Shop *</label>
+      <select name="shop" required>
+        <option value="">— Select —</option>
+        {% for s in shops %}<option value="{{ s.code }}">{{ s.code }}</option>{% endfor %}
+      </select>
+    </div>
+    {% else %}
+    <p class="muted">Shop: <span class="pill accent">{{ e.shop.code if e.shop else '—' }}</span></p>
+    {% endif %}
+
+    <div class="row">
+      <div class="form-group">
+        <label>Error Code</label>
+        <input type="text" name="error_code" maxlength="64"
+               value="{{ d.get('error_code', e.error_code if e else '') }}">
+      </div>
+      <div class="form-group" style="flex:2;">
+        <label>Error Name</label>
+        <input type="text" name="error_name" maxlength="512"
+               value="{{ d.get('error_name', e.error_name if e else '') }}">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Machine Name</label>
+      <input type="text" name="machine_name" maxlength="255"
+             value="{{ d.get('machine_name', e.machine_name if e else '') }}">
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label>Model</label>
+        <input type="text" name="model" maxlength="128"
+               value="{{ d.get('model', e.model if e else '') }}">
+      </div>
+      <div class="form-group">
+        <label>Unit</label>
+        <input type="text" name="unit" maxlength="64"
+               value="{{ d.get('unit', e.unit if e else '') }}">
+      </div>
+    </div>
+
+    <div class="form-group"><label>Symptoms</label><textarea name="symptoms" rows="3">{{ d.get('symptoms', e.symptoms if e else '') }}</textarea></div>
+    <div class="form-group"><label>Cause</label><textarea name="cause" rows="3">{{ d.get('cause', e.cause if e else '') }}</textarea></div>
+    <div class="form-group"><label>Check Steps</label><textarea name="check_steps" rows="4">{{ d.get('check_steps', e.check_steps if e else '') }}</textarea></div>
+    <div class="form-group"><label>Solution</label><textarea name="solution" rows="4">{{ d.get('solution', e.solution if e else '') }}</textarea></div>
+    <div class="form-group"><label>Notes</label><textarea name="notes" rows="2">{{ d.get('notes', e.notes if e else '') }}</textarea></div>
+
+    <div class="form-actions">
+      <button class="btn" type="submit">{{ icons.icon('check', 16) }} {{ 'Save' if mode == 'edit' else 'Create (PENDING)' }}</button>
+      <a class="btn ghost" href="{{ url_for('admin.errors_list') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

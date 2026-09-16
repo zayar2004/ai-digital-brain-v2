@@ -1,0 +1,71 @@
+{% extends "partials/base.html" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Knowledge Conflicts{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('alert-triangle', 22) }} Knowledge Conflicts</h1>
+      <p class="card-subtitle">{{ conflicts|length }} open conflicts</p>
+    </div>
+    <a class="btn ghost tiny" href="{{ url_for('admin.knowledge_list') }}">
+      {{ icons.icon('book', 14) }} Back to Knowledge
+    </a>
+  </div>
+
+  {% if conflicts %}
+  {% for c in conflicts %}
+  <div class="card" style="background:var(--bg);">
+    <div class="card-head">
+      <div>
+        <span class="pill danger">Conflict #{{ c.id }}</span>
+        <span class="muted" style="margin-left:8px;">
+          Shop {{ c.shop.code if c.shop else '—' }}
+        </span>
+      </div>
+    </div>
+
+    <p class="muted" style="margin-bottom:12px;">{{ c.description or 'Conflicting approved knowledge.' }}</p>
+
+    <div class="row">
+      <div class="form-group" style="flex:1;">
+        <label>A</label>
+        <div style="padding:10px;background:var(--bg-2);border-radius:8px;border:1px solid var(--border);">
+          <a href="{{ url_for('admin.knowledge_detail', knowledge_id=c.knowledge_a.id) }}">
+            #{{ c.knowledge_a.id }} · {{ c.knowledge_a.title }}
+          </a>
+          <div class="muted" style="font-size:12px;margin-top:4px;">
+            unit={{ c.knowledge_a.unit }} · error={{ c.knowledge_a.error_code }}
+          </div>
+        </div>
+      </div>
+      <div class="form-group" style="flex:1;">
+        <label>B</label>
+        <div style="padding:10px;background:var(--bg-2);border-radius:8px;border:1px solid var(--border);">
+          <a href="{{ url_for('admin.knowledge_detail', knowledge_id=c.knowledge_b.id) }}">
+            #{{ c.knowledge_b.id }} · {{ c.knowledge_b.title }}
+          </a>
+          <div class="muted" style="font-size:12px;margin-top:4px;">
+            unit={{ c.knowledge_b.unit }} · error={{ c.knowledge_b.error_code }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form method="post" action="{{ url_for('admin.knowledge_conflict_resolve', conflict_id=c.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <label>Resolution note</label>
+        <input type="text" name="note" maxlength="2000" placeholder="ဘယ်လို ဖြေရှင်းခဲ့လဲ...">
+      </div>
+      <button class="btn success tiny" type="submit">{{ icons.icon('check', 12) }} Mark resolved</button>
+    </form>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="empty">{{ icons.icon('check', 40) }}<p>No open conflicts. 🎉</p></div>
+  {% endif %}
+</div>
+
+{% endblock %}

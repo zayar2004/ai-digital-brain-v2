@@ -1,0 +1,87 @@
+{% extends "partials/base.html" %}
+{% set help_key = "machine_form" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}{{ 'Edit' if mode == 'edit' else 'New' }} Machine{% endblock %}
+{% block content %}
+
+{% set d = form_data if form_data else {} %}
+{% set m = machine %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">
+        {{ icons.icon('tool', 22) }}
+        {{ 'Edit Machine' if mode == 'edit' else 'New Machine' }}
+      </h1>
+      <p class="card-subtitle">
+        {% if mode == 'edit' %}Shop <span class="pill accent">{{ m.shop.code if m.shop else '—' }}</span>{% endif %}
+      </p>
+    </div>
+  </div>
+
+  <form method="post" novalidate>
+    {% if mode == 'new' %}
+    <div class="form-group">
+      <label>Shop *</label>
+      <select name="shop" required>
+        <option value="">— Select shop —</option>
+        {% for s in shops %}
+          <option value="{{ s.code }}" {{ 'selected' if d.get('shop') == s.code }}>{{ s.code }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% else %}
+    <p class="muted">Shop cannot be changed after creation.</p>
+    {% endif %}
+
+    <div class="form-group">
+      <label>Name *</label>
+      <input type="text" name="name" required maxlength="255"
+             value="{{ d.get('name', m.name if m else '') }}">
+      <div class="field-hint">စက်ရဲ့ အဓိကနာမည်။ ဆိုင်တစ်ခုထဲမှာ ထပ်မရှိရဘူး။</div>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label>Model</label>
+        <input type="text" name="model" maxlength="128"
+               value="{{ d.get('model', m.model if m else '') }}">
+      </div>
+      <div class="form-group">
+        <label>Unit</label>
+        <input type="text" name="unit" maxlength="64"
+               value="{{ d.get('unit', m.unit if m else '') }}">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Description</label>
+      <textarea name="description" rows="3">{{ d.get('description', m.description if m else '') }}</textarea>
+    </div>
+
+    {% if mode == 'edit' %}
+    <div class="form-group">
+      <label>Status</label>
+      {% set st = d.get('status', m.status if m else 'ACTIVE') %}
+      <select name="status">
+        <option value="ACTIVE" {{ 'selected' if st == 'ACTIVE' }}>ACTIVE</option>
+        <option value="MAINTENANCE" {{ 'selected' if st == 'MAINTENANCE' }}>MAINTENANCE</option>
+        <option value="RETIRED" {{ 'selected' if st == 'RETIRED' }}>RETIRED</option>
+      </select>
+    </div>
+    {% else %}
+    <div class="form-group">
+      <label>Aliases (one per line, optional)</label>
+      <textarea name="aliases" rows="4" placeholder="Croc&#10;CT&#10;Crocodile T">{{ d.get('aliases', '') }}</textarea>
+    </div>
+    {% endif %}
+
+    <div class="form-actions">
+      <button class="btn" type="submit">{{ icons.icon('check', 16) }} {{ 'Save' if mode == 'edit' else 'Create' }}</button>
+      <a class="btn ghost" href="{{ url_for('admin.machines_list') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "partials/base.html" %}
+{% set help_key = "image_ingest" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Image Ingest — AI Digital Brain{% endblock %}
+{% block content %}
+
+{% if mode == "input" %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('folder', 22) }} Image → Knowledge</h1>
+      <p class="card-subtitle">
+        ပုံ/screenshot upload လုပ်ပါ။ OCR ရနိုင်ရင် စာသား ဖတ်ပေးမယ်။
+        Caption/Description ထည့်ရင် ပိုကောင်းတယ်။
+      </p>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-group">
+      <label>Shop *</label>
+      <select name="shop" required>
+        <option value="">— Select —</option>
+        {% for s in shops %}<option value="{{ s.code }}">{{ s.code }}</option>{% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Image *</label>
+      <input type="file" name="file" accept="image/*" required>
+      <div class="field-hint">
+        JPG, PNG, WEBP စတာတွေ ရပါတယ်။ Screenshot တွေလည်း ရပါတယ်။
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Caption</label>
+      <input type="text" name="caption" maxlength="500"
+             placeholder="ဥပမာ: Carnival Circus P3 Error 07 screenshot">
+    </div>
+
+    <div class="form-group">
+      <label>Description</label>
+      <textarea name="description" rows="3"
+                placeholder="ဒီပုံထဲမှာ ဘာတွေ့တယ်၊ ဘာဖြစ်နေတယ် ဆိုတာ ရေးပါ..."></textarea>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn" type="submit">{{ icons.icon('upload', 16) }} Upload & OCR</button>
+      <a class="btn ghost" href="{{ url_for('admin.knowledge_list') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+
+{% elif mode == "preview" %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('search', 22) }} Image Preview</h1>
+      <p class="card-subtitle">
+        {{ doc.original_filename }}
+        · Shop <span class="pill accent">{{ shop.code }}</span>
+        · OCR
+        {% if doc.ocr_available %}<span class="pill ok">available</span>
+        {% else %}<span class="pill danger">not available</span>{% endif %}
+      </p>
+    </div>
+  </div>
+
+  {% for w in doc.warnings %}
+    <div class="flash warning">{{ w }}</div>
+  {% endfor %}
+
+  {% if doc.ocr_text %}
+  <h2>OCR Text</h2>
+  <pre style="white-space:pre-wrap;background:var(--bg);padding:12px;border-radius:8px;border:1px solid var(--border);font-family:var(--font-mono);font-size:13px;">{{ doc.ocr_text }}</pre>
+  {% endif %}
+</div>
+
+{% if doc.candidates %}
+<form method="post" action="{{ url_for('admin.image_ingest_save') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="shop" value="{{ shop.code }}">
+
+  {% for c in doc.candidates %}
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">Knowledge Candidate</h2>
+        <p class="card-subtitle">confidence {{ '%.2f'|format(c.confidence) }}</p>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" name="title" value="{{ c.title }}" maxlength="500">
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label>Machine Name</label>
+        <input type="text" name="machine_name" value="{{ c.machine_name or '' }}">
+      </div>
+      <div class="form-group">
+        <label>Unit</label>
+        <input type="text" name="unit" value="{{ c.unit or '' }}">
+      </div>
+      <div class="form-group">
+        <label>Error Code</label>
+        <input type="text" name="error_code" value="{{ c.error_code or '' }}">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Content</label>
+      <textarea name="content" rows="8">{{ c.content }}</textarea>
+    </div>
+
+    <input type="hidden" name="source_file" value="{{ doc.original_filename }}">
+
+    <div class="form-actions">
+      <button class="btn success" type="submit">{{ icons.icon('check', 16) }} Save as PENDING</button>
+      <a class="btn ghost" href="{{ url_for('admin.image_ingest') }}">← Back</a>
+    </div>
+  </div>
+  {% endfor %}
+</form>
+{% else %}
+<div class="card">
+  <div class="empty">{{ icons.icon('folder', 40) }}<p>Candidate မတွေ့ပါ။</p></div>
+  <div class="form-actions" style="border:0;justify-content:center;">
+    <a class="btn ghost" href="{{ url_for('admin.image_ingest') }}">← Back</a>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
+{% endblock %}

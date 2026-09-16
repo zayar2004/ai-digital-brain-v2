@@ -1,0 +1,297 @@
+{% import "partials/icons.html" as icons %}
+<!doctype html>
+<html lang="my" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0d12">
+  <meta name="color-scheme" content="dark light">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AI Brain">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+  <title>{% block title %}AI Digital Brain{% endblock %}</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=33">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+
+  {# Prevent theme flash: apply saved theme before paint #}
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('adb.theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    })();
+  </script>
+
+  <style>
+  /* ============ GLOBAL CONFIRM/ALERT MODAL ============ */
+  .g-modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.7);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    z-index: 9999;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity .18s ease;
+  }
+  .g-modal-backdrop.show {
+    display: flex;
+    opacity: 1;
+  }
+  .g-modal-card {
+    background: #181b22;
+    border: 1px solid #262a33;
+    border-radius: 20px;
+    padding: 24px 22px 20px;
+    width: 100%; max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    text-align: center;
+    transform: translateY(20px) scale(.95);
+    transition: transform .22s cubic-bezier(.34,1.56,.64,1);
+    color: #e8e8e8;
+  }
+  [data-theme="light"] .g-modal-card {
+    background: #ffffff;
+    border-color: #e4e6eb;
+    color: #111827;
+  }
+  .g-modal-backdrop.show .g-modal-card {
+    transform: none;
+  }
+  .g-modal-icon {
+    width: 60px; height: 60px; margin: 0 auto 12px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+  }
+  .g-modal-icon.info {
+    background: linear-gradient(135deg, rgba(99,102,241,.2), rgba(99,102,241,.05));
+    border: 1px solid rgba(99,102,241,.35);
+  }
+  .g-modal-icon.warn {
+    background: linear-gradient(135deg, rgba(255,159,10,.2), rgba(255,159,10,.05));
+    border: 1px solid rgba(255,159,10,.35);
+  }
+  .g-modal-icon.danger {
+    background: linear-gradient(135deg, rgba(255,69,58,.2), rgba(255,69,58,.05));
+    border: 1px solid rgba(255,69,58,.35);
+  }
+  .g-modal-title {
+    margin: 0 0 8px; font-size: 18px; font-weight: 600;
+  }
+  .g-modal-text {
+    margin: 0 0 18px; font-size: 14px;
+    color: #8b90a0; line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  [data-theme="light"] .g-modal-text { color: #6b7280; }
+  .g-modal-actions {
+    display: flex; gap: 10px;
+    justify-content: center;
+  }
+  .g-modal-actions button {
+    min-width: 110px;
+    justify-content: center;
+  }
+  </style>
+</head>
+<body>
+
+{% set path = request.path %}
+
+<!-- ==================== SIDEBAR ==================== -->
+{% if current_user.is_authenticated %}
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-head">
+    <div class="title">
+      <span class="logo">{{ icons.icon('brain', 16) }}</span>
+      <span>AI Brain</span>
+    </div>
+    <button class="icon-btn close-btn" onclick="sbClose()" aria-label="Close menu">
+      {{ icons.icon('x', 18) }}
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a class="nav-item {{ 'active' if path == '/' }}" href="{{ url_for('admin.dashboard') }}">
+      <span class="ic">{{ icons.icon('dashboard') }}</span>
+      <span class="lbl">Dashboard</span>
+    </a>
+    <a class="nav-item {{ 'active' if path.startswith('/search') }}" href="{{ url_for('admin.search_page') }}">
+      <span class="ic">{{ icons.icon('search') }}</span>
+      <span class="lbl">Search</span>
+    </a>
+
+    <div class="nav-section">Knowledge</div>
+    <a class="nav-item {{ 'active' if path == '/knowledge' }}" href="{{ url_for('admin.knowledge_list') }}">
+      <span class="ic">{{ icons.icon('book') }}</span><span class="lbl">Knowledge</span>
+    </a>
+    <a class="nav-item {{ 'active' if path.startswith('/teach') }}" href="{{ url_for('admin.teach_quick') }}">
+      <span class="ic">{{ icons.icon('zap') }}</span><span class="lbl">Quick Teach</span>
+    </a>
+    <a class="nav-item {{ 'active' if path.startswith('/ingest') }}" href="{{ url_for('admin.ingest_document_page') }}">
+      <span class="ic">{{ icons.icon('inbox') }}</span><span class="lbl">Ingest</span>
+    </a>
+    <a class="nav-item {{ 'active' if path == '/errors' }}" href="{{ url_for('admin.errors_list') }}">
+      <span class="ic">{{ icons.icon('alert-triangle') }}</span><span class="lbl">Errors</span>
+    </a>
+    <a class="nav-item {{ 'active' if path.startswith('/error-cases') }}" href="{{ url_for('admin.error_cases_list') }}">
+      <span class="ic">{{ icons.icon('clipboard-list') }}</span><span class="lbl">Error Cases</span>
+    </a>
+
+    <div class="nav-section">Operations</div>
+    <a class="nav-item {{ 'active' if path.startswith('/tasks') }}" href="{{ url_for('admin.tasks_list') }}">
+      <span class="ic">{{ icons.icon('clipboard-list') }}</span><span class="lbl">Tasks</span>
+    </a>
+    <a class="nav-item {{ 'active' if path.startswith('/reports') }}" href="{{ url_for('admin.reports_list') }}">
+      <span class="ic">{{ icons.icon('file-text') }}</span><span class="lbl">Reports</span>
+    </a>
+    <a class="nav-item {{ 'active' if path.startswith('/machines') }}" href="{{ url_for('admin.machines_list') }}">
+      <span class="ic">{{ icons.icon('tool') }}</span><span class="lbl">Machines</span>
+    </a>
+    <a class="nav-item {{ 'active' if path.startswith('/machine-codes') }}" href="{{ url_for('admin.machine_codes_list') }}">
+      <span class="ic">{{ icons.icon('key') }}</span><span class="lbl">Machine Codes</span>
+    </a>
+    <a class="nav-item {{ 'active' if path.startswith('/files') }}" href="{{ url_for('admin.files_list') }}">
+      <span class="ic">{{ icons.icon('folder') }}</span><span class="lbl">Files</span>
+    </a>
+    <a class="nav-item {{ 'active' if path.startswith('/shops') }}" href="{{ url_for('admin.shops_list') }}">
+      <span class="ic">{{ icons.icon('store') }}</span><span class="lbl">Shops</span>
+    </a>
+
+    {% if current_user.role in ['SUPER_ADMIN', 'ADMIN'] %}
+    <div class="nav-section">Admin</div>
+    <a class="nav-item {{ 'active' if path.startswith('/broadcast') }}" href="{{ url_for('admin.broadcast_page') }}">
+      <span class="ic">{{ icons.icon('inbox') }}</span><span class="lbl">Broadcast</span>
+    </a>
+    <a class="nav-item {{ 'active' if path.startswith('/audit') }}" href="{{ url_for('admin.audit_list') }}">
+      <span class="ic">{{ icons.icon('activity') }}</span><span class="lbl">Audit Log</span>
+    </a>
+    <a class="nav-item {{ 'active' if path.startswith('/ai/test') }}" href="{{ url_for('admin.ai_test') }}">
+      <span class="ic">{{ icons.icon('brain') }}</span><span class="lbl">AI Test</span>
+    </a>
+    <a class="nav-item {{ 'active' if path == '/users' or path.startswith('/users/') }}" href="{{ url_for('admin.users_list') }}">
+      <span class="ic">{{ icons.icon('users') }}</span><span class="lbl">Admin Users</span>
+    </a>
+    <a class="nav-item {{ 'active' if path.startswith('/telegram-groups') }}" href="{{ url_for('admin.telegram_groups_list') }}">
+      <span class="ic">{{ icons.icon('users') }}</span><span class="lbl">TG Groups</span>
+    </a>
+    <a class="nav-item {{ 'active' if path.startswith('/telegram-users') }}" href="{{ url_for('admin.telegram_users_list') }}">
+      <span class="ic">{{ icons.icon('log-in') }}</span><span class="lbl">Telegram Users</span>
+    </a>
+
+    <div class="nav-section">System</div>
+    <a class="nav-item {{ 'active' if path == '/settings' }}" href="{{ url_for('admin.settings_page') }}">
+      <span class="ic">{{ icons.icon('settings') }}</span><span class="lbl">Settings</span>
+    </a>
+    <a class="nav-item {{ 'active' if path == '/analytics' }}" href="{{ url_for('admin.analytics_dashboard') }}">
+      <span class="ic">{{ icons.icon('activity') }}</span><span class="lbl">Analytics</span>
+    </a>
+    <a class="nav-item {{ 'active' if path == '/live' }}" href="{{ url_for('admin.live_monitor') }}">
+  <span class="ic">{{ icons.icon('activity') }}</span><span class="lbl">Live</span>
+</a>
+  <a class="nav-item {{ 'active' if path == '/health' }}" href="{{ url_for('admin.health_page') }}">
+      <span class="ic">{{ icons.icon('activity') }}</span><span class="lbl">Health</span>
+    </a>
+    <a class="nav-item {{ 'active' if path.startswith('/backups') }}" href="{{ url_for('admin.backups_list') }}">
+      <span class="ic">{{ icons.icon('folder') }}</span><span class="lbl">Backups</span>
+    </a>
+    {% endif %}
+  </nav>
+
+  <div class="sidebar-footer">
+    <button type="button" class="theme-toggle" data-theme-toggle>
+      <span class="ic">{{ icons.icon('moon', 16) }}</span>
+      <span class="lbl" data-theme-label>Dark mode</span>
+    </button>
+    <a class="logout" href="{{ url_for('auth.logout') }}">
+      {{ icons.icon('log-out', 16) }}
+      <span>Logout</span>
+    </a>
+  </div>
+</aside>
+<div class="sidebar-backdrop" id="sbBackdrop" onclick="sbClose()"></div>
+{% endif %}
+
+<!-- ==================== TOPBAR ==================== -->
+<header class="topbar">
+  {% if current_user.is_authenticated %}
+    <button class="icon-btn hide-desktop" onclick="sbToggle()" aria-label="Menu">
+      {{ icons.icon('menu', 20) }}
+    </button>
+  {% endif %}
+  <a class="brand" href="{{ url_for('admin.dashboard') if current_user.is_authenticated else '/' }}">
+    <span class="logo">{{ icons.icon('brain', 18) }}</span>
+    <span class="hide-mobile">AI Digital Brain</span>
+  </a>
+  <div class="spacer"></div>
+
+  {% if current_user.is_authenticated %}
+    <form class="topbar-search hide-mobile" method="get" action="{{ url_for('admin.search_page') }}">
+      <input type="text" name="q" placeholder="Search knowledge, machines, codes..."
+             value="{{ request.args.get('q', '') }}"
+             autocomplete="off">
+    </form>
+    <a class="icon-btn hide-mobile" href="{{ url_for('admin.search_page') }}" title="Search">
+      {{ icons.icon('search', 18) }}
+    </a>
+    <a class="user-chip" href="{{ url_for('auth.logout') }}" title="Logout">
+      <span class="avatar">{{ current_user.username[:1]|upper }}</span>
+      <span class="info">
+        <span class="name">{{ current_user.username }}</span>
+        <span class="role">{{ current_user.role|replace('_', ' ')|title }}</span>
+      </span>
+    </a>
+  {% endif %}
+</header>
+
+<!-- ==================== MAIN ==================== -->
+<main class="main-wrap">
+  {% if help_key is defined and help_key and _help_data.get(help_key) %}
+    {% include "partials/help_banner.html" %}
+  {% endif %}
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, msg in messages %}
+      <div class="flash {{ category }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<script src="{{ url_for('static', filename='js/app.js') }}?v=33"></script>
+<script>
+  // PWA: register service worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/static/sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.warn('SW registration failed:', err));
+    });
+  }
+</script>
+
+<!-- Global Confirm/Alert Modal -->
+<div class="g-modal-backdrop" id="g-modal">
+  <div class="g-modal-card">
+    <div class="g-modal-icon info" id="g-modal-icon">❓</div>
+    <h3 class="g-modal-title" id="g-modal-title">Confirm</h3>
+    <p class="g-modal-text" id="g-modal-text"></p>
+    <div class="g-modal-actions">
+      <button type="button" class="btn ghost" id="g-modal-cancel">Cancel</button>
+      <button type="button" class="btn" id="g-modal-ok">OK</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

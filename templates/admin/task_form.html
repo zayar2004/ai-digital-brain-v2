@@ -1,0 +1,316 @@
+{% extends "partials/base.html" %}
+{% set help_key = "tasks" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}New Task{% endblock %}
+{% block content %}
+
+{% if mode == "input" %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('plus', 22) }} New Task</h1>
+      <p class="card-subtitle">Task တစ်ခု ဖန်တီးပါ</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- Manual Entry (Primary)                  -->
+  <!-- ═══════════════════════════════════════ -->
+  <form method="post" novalidate id="taskForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <!-- 1. Shop -->
+    <div class="form-group">
+      <label>🏪 ဆိုင် (Shop) *</label>
+      <select name="shop" required>
+        <option value="">— ရွေးပါ —</option>
+        {% for s in shops %}<option value="{{ s.code }}">{{ s.code }}</option>{% endfor %}
+      </select>
+    </div>
+
+    <!-- 2. Title -->
+    <div class="form-group">
+      <label>📋 ခေါင်းစဉ် (Title) *</label>
+      <input type="text" name="title" maxlength="500" required
+             placeholder="ဥပမာ: Crocodile စစ်ရန်">
+    </div>
+
+    <!-- 3. Description -->
+    <div class="form-group">
+      <label>📝 အသေးစိတ် (optional)</label>
+      <textarea name="description" rows="2"
+                placeholder="အသေးစိတ် ရေးရန် (optional)"></textarea>
+    </div>
+
+    <!-- 4. Frequency -->
+    <div class="form-group">
+      <label>🔁 ဘယ်လို လုပ်မလဲ? (Frequency) *</label>
+      <div class="radio-grid">
+        <label class="radio-card">
+          <input type="radio" name="frequency" value="DAILY" checked onchange="toggleFields()">
+          <span>📅 နေ့စဉ်<br><small>Daily</small></span>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="frequency" value="WEEKLY" onchange="toggleFields()">
+          <span>📆 အပတ်စဉ်<br><small>Weekly</small></span>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="frequency" value="MONTHLY" onchange="toggleFields()">
+          <span>🗓️ လစဉ်<br><small>Monthly</small></span>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="frequency" value="YEARLY" onchange="toggleFields()">
+          <span>📅 နှစ်စဉ်<br><small>Yearly</small></span>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="frequency" value="ONE_TIME" onchange="toggleFields()">
+          <span>⚡ တစ်ခါတည်း<br><small>One time</small></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 5. Weekday (conditional) -->
+    <div class="form-group freq-field freq-WEEKLY" style="display:none;">
+      <label>📆 ဘယ်နေ့? (Weekday) *</label>
+      <select name="weekday">
+        <option value="0">တနင်္လာ (Monday)</option>
+        <option value="1">အင်္ဂါ (Tuesday)</option>
+        <option value="2">ဗုဒ္ဓဟူး (Wednesday)</option>
+        <option value="3">ကြာသပတေး (Thursday)</option>
+        <option value="4">သောကြာ (Friday)</option>
+        <option value="5">စနေ (Saturday)</option>
+        <option value="6">တနင်္ဂနွေ (Sunday)</option>
+      </select>
+    </div>
+
+    <!-- 6. Day of month (conditional) -->
+    <div class="form-group freq-field freq-MONTHLY freq-YEARLY" style="display:none;">
+      <label>📅 ဘယ်ရက်နေ့? (Day of month) *</label>
+      <input type="number" name="day_of_month" min="1" max="31"
+             placeholder="1-31" value="1">
+    </div>
+
+    <!-- 7. Month (conditional) -->
+    <div class="form-group freq-field freq-YEARLY" style="display:none;">
+      <label>📅 ဘယ်လ? (Month) *</label>
+      <select name="month">
+        <option value="1">ဇန်နဝါရီ (Jan)</option>
+        <option value="2">ဖေဖော်ဝါရီ (Feb)</option>
+        <option value="3">မတ် (Mar)</option>
+        <option value="4">ဧပြီ (Apr)</option>
+        <option value="5">မေ (May)</option>
+        <option value="6">ဇွန် (Jun)</option>
+        <option value="7">ဇူလိုင် (Jul)</option>
+        <option value="8">ဩဂုတ် (Aug)</option>
+        <option value="9">စက်တင်ဘာ (Sep)</option>
+        <option value="10">အောက်တိုဘာ (Oct)</option>
+        <option value="11">နိုဝင်ဘာ (Nov)</option>
+        <option value="12">ဒီဇင်ဘာ (Dec)</option>
+      </select>
+    </div>
+
+    <!-- 8. Specific date (conditional) -->
+    <div class="form-group freq-field freq-ONE_TIME" style="display:none;">
+      <label>📅 ဘယ်နေ့? (Specific date) *</label>
+      <input type="date" name="specific_date">
+    </div>
+
+    <!-- 9. Time (always) -->
+    <div class="form-group">
+      <label>⏰ ဘယ်အချိန်? (Time) *</label>
+      <input type="time" name="task_time" required value="09:00" id="taskTime">
+      <div class="time-presets" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+        <button type="button" class="btn ghost tiny" onclick="setTime('08:00')">🌅 08:00</button>
+        <button type="button" class="btn ghost tiny" onclick="setTime('12:00')">☀️ 12:00</button>
+        <button type="button" class="btn ghost tiny" onclick="setTime('18:00')">🌆 18:00</button>
+        <button type="button" class="btn ghost tiny" onclick="setTime('21:00')">🌙 21:00</button>
+      </div>
+    </div>
+
+    <!-- 10. Priority -->
+    <div class="form-group">
+      <label>⚡ အရေးကြီးမှု (Priority)</label>
+      <div class="radio-grid">
+        <label class="radio-card">
+          <input type="radio" name="priority" value="LOW">
+          <span>🟢 သာမန်<br><small>Low</small></span>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="priority" value="NORMAL" checked>
+          <span>🔵 ပုံမှန်<br><small>Normal</small></span>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="priority" value="HIGH">
+          <span>🟠 အရေးကြီး<br><small>High</small></span>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="priority" value="URGENT">
+          <span>🔴 အလွန်အရေး<br><small>Urgent</small></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="form-actions">
+      <button class="btn success" type="submit">💾 Task ဖန်တီး</button>
+      <a class="btn ghost" href="{{ url_for('admin.tasks_list') }}">❌ Cancel</a>
+    </div>
+  </form>
+
+  <hr style="border:0;border-top:1px solid var(--border);margin:24px 0;">
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- AI Input (Optional - below)             -->
+  <!-- ═══════════════════════════════════════ -->
+  <details>
+    <summary style="cursor:pointer;font-size:14px;color:var(--muted);">
+      🤖 AI နဲ့ ရေးချင်ရင် (optional)
+    </summary>
+    <form method="post" novalidate style="margin-top:12px;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <label>Shop *</label>
+        <select name="shop" required>
+          <option value="">— Select —</option>
+          {% for s in shops %}<option value="{{ s.code }}">{{ s.code }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Natural language</label>
+        <textarea name="raw_text" rows="3"
+                  placeholder="A3 Crocodile Tycoon ကို တနင်္လာနေ့တိုင်း မနက် 9 နာရီ စစ်မယ်"></textarea>
+      </div>
+      <button class="btn" type="submit" name="mode" value="parse">
+        {{ icons.icon('brain', 16) }} AI ORGANIZE
+      </button>
+    </form>
+  </details>
+</div>
+
+<style>
+.radio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  margin-top: 6px;
+}
+.radio-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--card-bg, #1a1a1a);
+  transition: all 0.15s;
+  font-size: 13px;
+}
+.radio-card:hover {
+  border-color: var(--accent);
+}
+.radio-card input[type="radio"] {
+  margin: 0;
+}
+.radio-card input:checked + span {
+  color: var(--accent);
+  font-weight: 600;
+}
+.radio-card:has(input:checked) {
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, 0.1);
+}
+.radio-card small {
+  opacity: 0.7;
+  font-weight: 400;
+}
+</style>
+
+<script>
+function toggleFields() {
+  const freq = document.querySelector('input[name="frequency"]:checked')?.value || 'DAILY';
+  document.querySelectorAll('.freq-field').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.freq-' + freq).forEach(el => el.style.display = 'block');
+}
+
+function setTime(t) {
+  document.getElementById('taskTime').value = t;
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', toggleFields);
+</script>
+
+{% elif mode == "preview" %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('search', 22) }} Preview</h1>
+      <p class="card-subtitle">
+        Shop <span class="pill accent">{{ shop.code }}</span>
+        · Raw: "{{ raw_text[:80] }}"
+      </p>
+    </div>
+  </div>
+
+  <form method="post" action="{{ url_for('admin.task_new_save') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="shop" value="{{ shop.code }}">
+
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" name="title" value="{{ parsed.title }}" maxlength="500" required>
+    </div>
+
+    <div class="form-group">
+      <label>Description</label>
+      <textarea name="description" rows="2"></textarea>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label>Frequency</label>
+        <select name="frequency">
+          {% for f in ['DAILY','WEEKLY','MONTHLY','YEARLY','ONE_TIME'] %}
+          <option value="{{ f }}" {{ 'selected' if parsed.frequency == f }}>{{ f }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Weekday (0=Mon..6=Sun)</label>
+        <input type="number" name="weekday" min="0" max="6" value="{{ parsed.weekday or '' }}">
+      </div>
+      <div class="form-group">
+        <label>Day of month</label>
+        <input type="number" name="day_of_month" min="1" max="31" value="{{ parsed.day_of_month or '' }}">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label>Specific date</label>
+        <input type="text" name="specific_date" value="{{ parsed.specific_date or '' }}">
+      </div>
+      <div class="form-group">
+        <label>Time</label>
+        <input type="text" name="task_time" value="{{ parsed.task_time or '' }}">
+      </div>
+      <div class="form-group">
+        <label>Priority</label>
+        <select name="priority">
+          {% for p in ['LOW','NORMAL','HIGH','URGENT'] %}
+          <option value="{{ p }}" {{ 'selected' if parsed.priority == p }}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn success" type="submit">Create Task</button>
+      <a class="btn ghost" href="{{ url_for('admin.task_new') }}">← Back</a>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+{% endblock %}

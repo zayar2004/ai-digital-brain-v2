@@ -1,0 +1,198 @@
+{% extends "partials/base.html" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Dashboard — AI Digital Brain{% endblock %}
+{% block content %}
+
+<!-- Welcome -->
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;font-size:22px;">
+        မင်္ဂလာပါ {{ user.full_name or user.username }} 👋
+      </h1>
+      <p class="card-subtitle" style="margin-top:6px;">
+        <span class="pill accent">{{ user.role }}</span>
+        · ဒီနေ့ <strong>{{ today }}</strong>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ==== Action Required ==== -->
+{% if action_items %}
+<div class="card" style="border-color: rgba(255,159,10,.3); background: linear-gradient(135deg, rgba(255,159,10,.06), transparent);">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title" style="color: var(--warn);">
+        🔴 လုပ်ရမယ့်အလုပ်
+      </h2>
+      <p class="card-subtitle">{{ action_items|length }} item(s) လုပ်ရန် လိုတယ်</p>
+    </div>
+  </div>
+
+  <div style="display:grid;gap:10px;">
+    {% for item in action_items %}
+    <a href="{{ item.url }}"
+       style="display:flex;align-items:center;gap:12px;
+              padding:14px 16px;
+              background:var(--bg);
+              border:1px solid var(--border);
+              border-radius:12px;
+              text-decoration:none;color:var(--text);
+              transition: transform .1s;">
+      <span style="font-size:24px;flex-shrink:0;">{{ item.icon }}</span>
+      <div style="flex:1;">
+        <div style="font-weight:600;font-size:15px;">{{ item.title }}</div>
+        <div class="muted" style="font-size:12px;margin-top:2px;">{{ item.hint }}</div>
+      </div>
+      <span style="font-size:20px;color:var(--text-dim);">›</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="card" style="border-color: rgba(48,209,88,.3); background: linear-gradient(135deg, rgba(48,209,88,.06), transparent);">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span style="font-size:32px;">✅</span>
+    <div>
+      <h2 style="margin:0;font-size:16px;color:var(--ok);">လုပ်ရမယ့်အလုပ် မရှိပါ</h2>
+      <p class="muted" style="margin:2px 0 0;">အားလုံး ပြီးပါပြီ</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ==== Quick Actions ==== -->
+<div class="card">
+  <h2 class="card-title">⚡ Quick Actions</h2>
+  <div class="row" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">
+    <a class="btn" href="{{ url_for('admin.teach_quick') }}" style="justify-content:center;">
+      ⚡ Quick Teach
+    </a>
+    <a class="btn ghost" href="{{ url_for('admin.machine_codes_import') }}" style="justify-content:center;">
+      📥 Import Excel
+    </a>
+    <a class="btn ghost" href="{{ url_for('admin.broadcast_page') }}" style="justify-content:center;">
+      📢 Broadcast
+    </a>
+    <a class="btn ghost" href="{{ url_for('admin.analytics_dashboard') }}" style="justify-content:center;">
+      📊 Analytics
+    </a>
+    <a class="btn ghost" href="{{ url_for('admin.knowledge_list', status='PENDING') }}" style="justify-content:center;">
+      📖 Pending
+    </a>
+    <a class="btn ghost" href="{{ url_for('admin.tasks_list', tab='today') }}" style="justify-content:center;">
+      📋 Today Tasks
+    </a>
+  </div>
+</div>
+
+<!-- ==== System Health ==== -->
+<div class="card">
+  <h2 class="card-title">📊 System Status</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
+    <div style="padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
+      <div class="muted" style="font-size:11px;">DATABASE</div>
+      <div style="font-size:14px;margin-top:4px;">
+        {% if health.database == 'ok' %}🟢 OK{% else %}🔴 Error{% endif %}
+      </div>
+    </div>
+    <div style="padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
+      <div class="muted" style="font-size:11px;">AI</div>
+      <div style="font-size:14px;margin-top:4px;">
+        {% if health.ai %}🟢 {{ health.ai }}{% else %}⚪ Off{% endif %}
+      </div>
+    </div>
+    <div style="padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
+      <div class="muted" style="font-size:11px;">TELEGRAM</div>
+      <div style="font-size:14px;margin-top:4px;">
+        {% if health.telegram %}🟢 Ready{% else %}⚪ Off{% endif %}
+      </div>
+    </div>
+    <div style="padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
+      <div class="muted" style="font-size:11px;">BACKUP</div>
+      <div style="font-size:14px;margin-top:4px;">
+        {{ health.backup_ago or 'never' }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==== Content Counts ==== -->
+<div class="card">
+  <h2 class="card-title">📚 Content</h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(120px,1fr));">
+    <a href="{{ url_for('admin.knowledge_list') }}" style="text-decoration:none;" class="grid-item">
+      <div class="code">{{ counts.knowledge }}</div>
+      <div class="muted" style="font-size:11px;">📖 Knowledge</div>
+    </a>
+    <a href="{{ url_for('admin.errors_list') }}" style="text-decoration:none;" class="grid-item">
+      <div class="code">{{ counts.errors }}</div>
+      <div class="muted" style="font-size:11px;">⚠️ Errors</div>
+    </a>
+    <a href="{{ url_for('admin.error_cases_list') }}" style="text-decoration:none;" class="grid-item">
+      <div class="code">{{ counts.cases }}</div>
+      <div class="muted" style="font-size:11px;">📋 Cases</div>
+    </a>
+    <a href="{{ url_for('admin.machines_list') }}" style="text-decoration:none;" class="grid-item">
+      <div class="code">{{ counts.machines }}</div>
+      <div class="muted" style="font-size:11px;">🔧 Machines</div>
+    </a>
+    <a href="{{ url_for('admin.machine_codes_list') }}" style="text-decoration:none;" class="grid-item">
+      <div class="code">{{ counts.codes }}</div>
+      <div class="muted" style="font-size:11px;">🔑 Codes</div>
+    </a>
+    <a href="{{ url_for('admin.tasks_list', tab='all') }}" style="text-decoration:none;" class="grid-item">
+      <div class="code">{{ counts.tasks }}</div>
+      <div class="muted" style="font-size:11px;">📋 Tasks</div>
+    </a>
+  </div>
+</div>
+
+<!-- ==== Shops ==== -->
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">🏪 Shops ({{ shops|length }})</h2>
+    </div>
+    <a class="btn ghost tiny" href="{{ url_for('admin.shops_list') }}">View all</a>
+  </div>
+  <div class="grid">
+    {% for s in shops %}
+      <div class="grid-item"><div class="code">{{ s.code }}</div></div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ==== Recent Activity ==== -->
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">📜 Recent Activity</h2>
+    </div>
+    {% if current_user.role in ['SUPER_ADMIN', 'ADMIN'] %}
+    <a class="btn ghost tiny" href="{{ url_for('admin.audit_list') }}">View all</a>
+    {% endif %}
+  </div>
+
+  {% if recent_audit %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Action</th><th>Actor</th><th>When</th></tr></thead>
+      <tbody>
+        {% for a in recent_audit %}
+        <tr>
+          <td><span class="code">{{ a.action }}</span></td>
+          <td>{{ a.actor_label or '—' }}</td>
+          <td class="muted">{{ a.created_at.strftime('%m-%d %H:%M') if a.created_at else '' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">{{ icons.icon('activity', 40) }}<p>No activity yet.</p></div>
+  {% endif %}
+</div>
+
+{% endblock %}

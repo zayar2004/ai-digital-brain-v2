@@ -1,0 +1,71 @@
+{% extends "partials/base.html" %}
+{% set help_key = "shops" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Shops — AI Digital Brain{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">🏪 Shops ({{ shops|length }})</h1>
+      <p class="card-subtitle">A1 – A13 · ဆိုင်တစ်ခုချင်း data</p>
+    
+      <a class="btn" href="{{ url_for('admin.shop_new') }}">➕ New Shop</a>
+</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;">
+    {% for s in shops %}
+    {% set st = stats.get(s.id, {}) %}
+    {% set has_data = st.get('machines', 0) + st.get('codes', 0) + st.get('knowledge', 0) > 0 %}
+    <a href="{{ url_for('admin.shop_detail', code=s.code) }}"
+       style="text-decoration:none;color:inherit;display:block;
+              background:var(--bg);border:1px solid var(--border);
+              border-radius:14px;padding:14px;
+              transition: all .15s ease;
+              {% if not has_data %}opacity:.55;{% endif %}"
+       onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-2px)'"
+       onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
+
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:44px;height:44px;border-radius:12px;
+                    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+                    color:#fff;display:flex;align-items:center;justify-content:center;
+                    font-weight:700;font-size:16px;">
+          {{ s.code }}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:14px;white-space:nowrap;
+                      overflow:hidden;text-overflow:ellipsis;">
+            {{ s.name or s.code }}
+          </div>
+          <div class="muted" style="font-size:11px;">
+            {{ s.description[:40] if s.description else '—' }}
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:12px;">
+        <div>🔧 <strong>{{ st.get('machines', 0) }}</strong></div>
+        <div>🔑 <strong>{{ st.get('codes', 0) }}</strong></div>
+        <div>📖 <strong>{{ st.get('knowledge', 0) }}</strong></div>
+        <div>⚠️ <strong>{{ st.get('errors', 0) }}</strong></div>
+        <div>📋 <strong>{{ st.get('cases', 0) }}</strong></div>
+        <div>📁 <strong>{{ st.get('files', 0) }}</strong></div>
+        <div>✅ <strong>{{ st.get('tasks_pending', 0) }}</strong>/{{ st.get('tasks_total', 0) }}</div>
+        <div>👥 <strong>{{ st.get('telegram_users', 0) }}</strong></div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <p class="muted" style="margin:0;font-size:12px;line-height:1.7;">
+    🔧 Machines &nbsp;·&nbsp; 🔑 Codes &nbsp;·&nbsp; 📖 Knowledge &nbsp;·&nbsp;
+    ⚠️ Errors &nbsp;·&nbsp; 📋 Cases &nbsp;·&nbsp; 📁 Files &nbsp;·&nbsp;
+    ✅ Tasks (pending/total) &nbsp;·&nbsp; 👥 Telegram Users
+  </p>
+</div>
+
+{% endblock %}

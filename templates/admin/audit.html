@@ -1,0 +1,56 @@
+{% extends "partials/base.html" %}
+{% set help_key = "audit" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Audit Log{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('activity', 22) }} Audit Log</h1>
+      <p class="card-subtitle">{{ pagination.total }} entries · page {{ pagination.page }} of {{ pagination.pages or 1 }}</p>
+    </div>
+  </div>
+
+  {% if pagination.items %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr><th>#</th><th>Action</th><th>Actor</th><th>Entity</th><th>IP</th><th>When</th></tr>
+      </thead>
+      <tbody>
+        {% for a in pagination.items %}
+        <tr>
+          <td class="muted">{{ a.id }}</td>
+          <td><span class="code">{{ a.action }}</span></td>
+          <td>{{ a.actor_label or '—' }}</td>
+          <td class="muted">
+            {% if a.entity_type %}{{ a.entity_type }}{% if a.entity_id %}#{{ a.entity_id }}{% endif %}{% else %}—{% endif %}
+          </td>
+          <td class="muted">{{ a.ip_address or '—' }}</td>
+          <td class="muted">{{ a.created_at.strftime('%Y-%m-%d %H:%M:%S') if a.created_at else '' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination">
+    <span class="info">Showing {{ pagination.items|length }} of {{ pagination.total }}</span>
+    {% if pagination.has_prev %}
+      <a class="btn ghost tiny" href="{{ url_for('admin.audit_list', page=pagination.prev_num) }}">
+        {{ icons.icon('chevron-left', 14) }} Prev
+      </a>
+    {% endif %}
+    {% if pagination.has_next %}
+      <a class="btn ghost tiny" href="{{ url_for('admin.audit_list', page=pagination.next_num) }}">
+        Next {{ icons.icon('chevron-right', 14) }}
+      </a>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="empty">{{ icons.icon('activity', 40) }}<p>No audit entries yet.</p></div>
+  {% endif %}
+</div>
+
+{% endblock %}

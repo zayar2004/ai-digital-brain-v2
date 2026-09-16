@@ -1,0 +1,291 @@
+{% extends "partials/base.html" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Shop {{ shop.code }} — AI Digital Brain{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="width:56px;height:56px;border-radius:14px;
+                  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+                  color:#fff;display:flex;align-items:center;justify-content:center;
+                  font-weight:700;font-size:20px;">
+        {{ shop.code }}
+      </div>
+      <div>
+        <h1 style="margin:0;">{{ shop.name or shop.code }}</h1>
+        <p class="card-subtitle" style="margin-top:4px;">
+          Code: <span class="pill accent">{{ shop.code }}</span>
+          · Status:
+          {% if shop.is_active %}
+            <span class="pill ok">Active</span>
+          {% else %}
+            <span class="pill danger">Inactive</span>
+          {% endif %}
+        </p>
+      </div>
+    </div>
+    <a class="btn ghost tiny" href="{{ url_for('admin.shops_list') }}">← All Shops</a>
+  </div>
+
+  {% if shop.description %}
+  <p class="muted" style="margin-top:12px;">{{ shop.description }}</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="card-title">📊 Data Overview</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;">
+
+    <a href="{{ url_for('admin.machines_list', shop=shop.code) }}"
+       class="grid-item" style="text-decoration:none;color:inherit;">
+      <div style="font-size:22px;font-weight:700;color:var(--accent);">{{ stats.machines }}</div>
+      <div class="muted" style="font-size:11px;">🔧 Machines</div>
+    </a>
+
+    <a href="{{ url_for('admin.machine_codes_list', shop=shop.code) }}"
+       class="grid-item" style="text-decoration:none;color:inherit;">
+      <div style="font-size:22px;font-weight:700;color:var(--accent);">{{ stats.codes }}</div>
+      <div class="muted" style="font-size:11px;">🔑 Codes</div>
+    </a>
+
+    <a href="{{ url_for('admin.knowledge_list', shop=shop.code) }}"
+       class="grid-item" style="text-decoration:none;color:inherit;">
+      <div style="font-size:22px;font-weight:700;color:var(--accent);">{{ stats.knowledge }}</div>
+      <div class="muted" style="font-size:11px;">📖 Knowledge</div>
+    </a>
+
+    <a href="{{ url_for('admin.errors_list', shop=shop.code) }}"
+       class="grid-item" style="text-decoration:none;color:inherit;">
+      <div style="font-size:22px;font-weight:700;color:var(--accent);">{{ stats.errors }}</div>
+      <div class="muted" style="font-size:11px;">⚠️ Errors</div>
+    </a>
+
+    <a href="{{ url_for('admin.error_cases_list', shop=shop.code) }}"
+       class="grid-item" style="text-decoration:none;color:inherit;">
+      <div style="font-size:22px;font-weight:700;color:var(--accent);">{{ stats.cases }}</div>
+      <div class="muted" style="font-size:11px;">📋 Cases</div>
+    </a>
+
+    <a href="{{ url_for('admin.files_list', shop=shop.code) }}"
+       class="grid-item" style="text-decoration:none;color:inherit;">
+      <div style="font-size:22px;font-weight:700;color:var(--accent);">{{ stats.files }}</div>
+      <div class="muted" style="font-size:11px;">📁 Files</div>
+    </a>
+
+    <a href="{{ url_for('admin.tasks_list', tab='all', shop=shop.code) }}"
+       class="grid-item" style="text-decoration:none;color:inherit;">
+      <div style="font-size:22px;font-weight:700;color:var(--accent);">
+        {{ stats.tasks_pending }}/{{ stats.tasks_total }}
+      </div>
+      <div class="muted" style="font-size:11px;">✅ Tasks (pending)</div>
+    </a>
+
+    <a href="{{ url_for('admin.telegram_users_list') }}"
+       class="grid-item" style="text-decoration:none;color:inherit;">
+      <div style="font-size:22px;font-weight:700;color:var(--accent);">{{ stats.telegram_users }}</div>
+      <div class="muted" style="font-size:11px;">👥 TG Users</div>
+    </a>
+
+  </div>
+</div>
+
+{% if current_user.role == 'SUPER_ADMIN' %}
+<div class="card">
+  <h2 class="card-title">⚙️ Edit Shop</h2>
+  <p class="muted" style="font-size:12px;margin-top:0;">
+    Code (<code>{{ shop.code }}</code>) ကို ပြောင်းလို့ မရပါ။
+    Name နဲ့ Description ပြင်လို့ရပါတယ်။
+  </p>
+  <form method="post" action="{{ url_for('admin.shop_edit', code=shop.code) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-group">
+      <label>Code (read-only)</label>
+      <input type="text" value="{{ shop.code }}" disabled>
+    </div>
+
+    <div class="form-group">
+      <label>Display Name</label>
+      <input type="text" name="name" maxlength="255"
+             value="{{ shop.name or shop.code }}"
+             placeholder="e.g. Crocodile Hall">
+      <div class="field-hint">ဆိုင်ရဲ့ ပြသမည့် နာမည်</div>
+    </div>
+
+    <div class="form-group">
+      <label>Description</label>
+      <textarea name="description" rows="3" maxlength="2000"
+                placeholder="ဆိုင်အကြောင်း မှတ်ချက်...">{{ shop.description or '' }}</textarea>
+    </div>
+
+    <div class="form-actions" style="border:0;padding-top:0;">
+      <button class="btn" type="submit">💾 Save</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">🕐 Recent Activity</h2>
+      <p class="card-subtitle">ဒီဆိုင်ရဲ့ လုပ်ဆောင်ချက် ၁၀ ခု</p>
+    </div>
+    {% if current_user.role in ['SUPER_ADMIN', 'ADMIN'] %}
+    <a class="btn ghost tiny" href="{{ url_for('admin.audit_list') }}">All →</a>
+    {% endif %}
+  </div>
+
+  {% if recent %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Action</th><th>Actor</th><th>When</th></tr></thead>
+      <tbody>
+        {% for a in recent %}
+        <tr>
+          <td><span class="code">{{ a.action }}</span></td>
+          <td class="muted">{{ a.actor_label or '—' }}</td>
+          <td class="muted">
+            {{ a.created_at.strftime('%m-%d %H:%M') if a.created_at else '' }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">{{ icons.icon('activity', 40) }}<p>No activity yet.</p></div>
+  {% endif %}
+</div>
+
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">🏭 Machine Excel Sources ({{ machine_sources|length }})</h2>
+      <p class="card-subtitle">Import လုပ်ထားတဲ့ Excel files</p>
+    </div>
+    <a class="btn ghost tiny"
+       href="{{ url_for('admin.machine_codes_import') }}">
+      ➕ New Import
+    </a>
+  </div>
+
+  {% if machine_sources %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Status</th>
+          <th>Rows</th>
+          <th>Imported</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in machine_sources %}
+        <tr>
+          <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+              title="{{ s.original_filename }}">
+            {{ s.original_filename or '—' }}
+          </td>
+          <td>
+            {% if s.status == 'APPROVED' %}
+              <span class="pill ok">{{ s.status }}</span>
+            {% elif s.status == 'REVIEW_REQUIRED' %}
+              <span class="pill warn">{{ s.status }}</span>
+            {% elif s.status == 'FAILED' %}
+              <span class="pill danger">{{ s.status }}</span>
+            {% else %}
+              <span class="pill">{{ s.status }}</span>
+            {% endif %}
+          </td>
+          <td class="muted">{{ s.row_count or 0 }}</td>
+          <td class="muted">{{ s.imported_count or 0 }}</td>
+          <td style="white-space:nowrap;">
+            <form method="post"
+                  action="{{ url_for('admin.machine_code_source_delete', source_id=s.id) }}"
+                  style="display:inline;"
+                  onsubmit="return customConfirm(event, 'Source + codes ဖျက်မလား? {{ s.original_filename }}', 'danger');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn danger tiny" type="submit" title="Delete">🗑️</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <p class="muted">Machine Excel file မရှိပါ။</p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">📁 Files ({{ shop_files|length }})</h2>
+      <p class="card-subtitle">ဒီဆိုင်ရဲ့ file တွေ</p>
+    </div>
+    <a class="btn ghost tiny"
+       href="{{ url_for('admin.files_list', shop=shop.code) }}">
+      ➕ Upload / All Files
+    </a>
+  </div>
+
+  {% if shop_files %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Category</th>
+          <th>Size</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in shop_files %}
+        <tr>
+          <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+              title="{{ f.original_filename }}">
+            {{ f.original_filename }}
+          </td>
+          <td><span class="pill">{{ f.category or '—' }}</span></td>
+          <td class="muted">
+            {% if f.size_bytes %}
+              {{ (f.size_bytes / 1024)|round(1) }} KB
+            {% else %}—{% endif %}
+          </td>
+          <td style="white-space:nowrap;">
+            <a class="btn ghost tiny"
+               href="{{ url_for('admin.file_download', media_id=f.id) }}"
+               title="Download">⬇️</a>
+            <form method="post"
+                  action="{{ url_for('admin.file_delete', media_id=f.id) }}"
+                  style="display:inline;"
+                  onsubmit="return customConfirm(event, 'File ဖျက်မလား? {{ f.original_filename }}', 'danger');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn danger tiny" type="submit" title="Delete">🗑️</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <p class="muted">File မရှိပါ။</p>
+    <a class="btn ghost" href="{{ url_for('admin.files_list', shop=shop.code) }}">
+      ➕ File Upload လုပ်ပါ
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

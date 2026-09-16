@@ -1,0 +1,80 @@
+{% extends "partials/base.html" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Compare Reports — AI Digital Brain{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('activity', 22) }} Compare Reports</h1>
+      <p class="card-subtitle">Report နှစ်ခုကို နှိုင်းယှဉ်ပါ။</p>
+    </div>
+  </div>
+
+  <form method="get" class="toolbar">
+    <div class="field">
+      <label>Shop</label>
+      <select name="shop">
+        <option value="">— Select —</option>
+        {% for s in shops %}
+          <option value="{{ s.code }}" {{ 'selected' if current_shop == s.code }}>{{ s.code }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label>Report A</label>
+      <select name="a">
+        <option value="">— Select —</option>
+        {% for r in reports %}
+          <option value="{{ r.id }}" {{ 'selected' if a and a.id == r.id }}>{{ r.report_date }} (#{{ r.id }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label>Report B</label>
+      <select name="b">
+        <option value="">— Select —</option>
+        {% for r in reports %}
+          <option value="{{ r.id }}" {{ 'selected' if b and b.id == r.id }}>{{ r.report_date }} (#{{ r.id }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="btn" type="submit">{{ icons.icon('activity', 16) }} Compare</button>
+  </form>
+</div>
+
+{% if comparison %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">
+        A: {{ comparison.a.date }} → B: {{ comparison.b.date }}
+      </h2>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Metric</th><th>A</th><th>B</th><th>Δ</th></tr></thead>
+      <tbody>
+        {% for row in comparison.rows %}
+        <tr>
+          <td>{{ row.key }}</td>
+          <td><span class="code">{{ row.a if row.a is not none else '—' }}</span></td>
+          <td><span class="code">{{ row.b if row.b is not none else '—' }}</span></td>
+          <td>
+            {% if row.delta is not none %}
+              {% if row.delta > 0 %}<span class="pill ok">+{{ row.delta }}</span>
+              {% elif row.delta < 0 %}<span class="pill danger">{{ row.delta }}</span>
+              {% else %}<span class="pill">{{ row.delta }}</span>{% endif %}
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "partials/base.html" %}
+{% set help_key = "tasks" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Tasks — AI Digital Brain{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('clipboard-list', 22) }} Tasks</h1>
+      <p class="card-subtitle">Today: {{ today }} · {{ tasks|length }} tasks</p>
+    </div>
+    <a class="btn" href="{{ url_for('admin.task_new') }}">
+      {{ icons.icon('plus', 16) }} New Task
+    </a>
+  </div>
+
+  <nav class="tabs">
+    <a class="tab {{ 'active' if tab == 'today' }}" href="{{ url_for('admin.tasks_list', tab='today', shop=current_shop) }}">Today</a>
+    <a class="tab {{ 'active' if tab == 'upcoming' }}" href="{{ url_for('admin.tasks_list', tab='upcoming', shop=current_shop) }}">Upcoming</a>
+    <a class="tab {{ 'active' if tab == 'overdue' }}" href="{{ url_for('admin.tasks_list', tab='overdue', shop=current_shop) }}">Overdue</a>
+    <a class="tab {{ 'active' if tab == 'completed' }}" href="{{ url_for('admin.tasks_list', tab='completed', shop=current_shop) }}">Completed</a>
+    <a class="tab {{ 'active' if tab == 'all' }}" href="{{ url_for('admin.tasks_list', tab='all', shop=current_shop) }}">All</a>
+  </nav>
+
+  <form method="get" class="toolbar" style="margin-top:12px;">
+    <input type="hidden" name="tab" value="{{ tab }}">
+    <div class="field">
+      <label>Shop</label>
+      <select name="shop" onchange="this.form.submit()">
+        <option value="">— All —</option>
+        {% for s in shops %}
+          <option value="{{ s.code }}" {{ 'selected' if current_shop == s.code }}>{{ s.code }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+
+  {% if tasks %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr><th>Shop</th><th>Title</th><th>Schedule</th><th>Time</th><th>Priority</th><th>Status</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for t in tasks %}
+        <tr>
+          <td><span class="pill accent">{{ t.shop.code if t.shop else '—' }}</span></td>
+          <td>
+            {{ t.title }}
+            {% if t.description %}<div class="muted" style="font-size:12px;">{{ t.description[:80] }}</div>{% endif %}
+          </td>
+          <td class="muted">{{ t.describe_schedule() }}</td>
+          <td class="muted">{{ t.task_time or '—' }}</td>
+          <td>
+            {% if t.priority == 'URGENT' %}<span class="pill danger">{{ t.priority }}</span>
+            {% elif t.priority == 'HIGH' %}<span class="pill warn">{{ t.priority }}</span>
+            {% else %}<span class="pill">{{ t.priority }}</span>{% endif %}
+          </td>
+          <td>
+            {% if t.status == 'COMPLETED' %}<span class="pill ok">{{ t.status }}</span>
+            {% elif t.status == 'IN_PROGRESS' %}<span class="pill warn">{{ t.status }}</span>
+            {% elif t.status == 'CANCELLED' %}<span class="pill danger">{{ t.status }}</span>
+            {% else %}<span class="pill">{{ t.status }}</span>{% endif %}
+          </td>
+          <td>
+            {% if t.status in ['PENDING', 'IN_PROGRESS'] and current_user.role in ['SUPER_ADMIN','ADMIN','EDITOR'] %}
+            <form method="post" action="{{ url_for('admin.task_complete', task_id=t.id) }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn success tiny" type="submit" title="Complete">
+                {{ icons.icon('check', 12) }}
+              </button>
+            </form>
+            <form method="post" action="{{ url_for('admin.task_skip', task_id=t.id) }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn ghost tiny" type="submit" title="Skip">
+                {{ icons.icon('x', 12) }}
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">{{ icons.icon('clipboard-list', 40) }}<p>Task မရှိပါ။</p></div>
+  {% endif %}
+</div>
+
+<style>
+  .tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+  .tab {
+    padding: 8px 14px; font-size: 13px; color: var(--text-dim);
+    text-decoration: none; border-bottom: 2px solid transparent;
+    white-space: nowrap; font-weight: 500;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+</style>
+
+{% endblock %}

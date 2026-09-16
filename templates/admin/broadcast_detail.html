@@ -1,0 +1,74 @@
+{% extends "partials/base.html" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Broadcast #{{ b.id }} — AI Digital Brain{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">📢 Broadcast #{{ b.id }}</h1>
+      <p class="card-subtitle">
+        Status
+        {% if b.status == 'SENT' %}<span class="pill ok">{{ b.status }}</span>
+        {% elif b.status == 'PARTIAL' %}<span class="pill warn">{{ b.status }}</span>
+        {% elif b.status == 'FAILED' %}<span class="pill danger">{{ b.status }}</span>
+        {% else %}<span class="pill">{{ b.status }}</span>{% endif %}
+        · ✓ {{ b.sent_count }} / ✗ {{ b.failed_count }} / total {{ b.recipient_count }}
+      </p>
+    </div>
+    <a class="btn ghost tiny" href="{{ url_for('admin.broadcast_page') }}">← Back</a>
+  </div>
+
+  {% if b.message %}
+  <h2>Message</h2>
+  <pre style="white-space:pre-wrap;font-family:inherit;background:var(--bg-3);padding:12px;border-radius:8px;">{{ b.message }}</pre>
+  {% endif %}
+
+  {% if b.photos_rel %}
+  <h2>Photos ({{ b.photos_rel|length }})</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">
+    {% for p in b.photos_rel %}
+    <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <img src="{{ url_for('admin.broadcast_photo_view', pid=p.id) }}"
+           style="width:100%;height:120px;object-fit:cover;display:block;">
+      <div style="padding:6px 8px;font-size:11px;color:var(--text-dim);">
+        #{{ p.position }}
+        {% if p.telegram_file_id %}· <span style="color:var(--ok);">cached</span>{% else %}· <span style="color:var(--warn);">not cached</span>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="card-title">Recipients ({{ b.recipients|length }})</h2>
+  {% if b.recipients %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>User</th><th>TG ID</th><th>Status</th><th>Error</th><th>Sent</th></tr></thead>
+      <tbody>
+        {% for r in b.recipients %}
+        <tr>
+          <td>{{ r.telegram_display_name or '—' }}</td>
+          <td class="muted"><code>{{ r.telegram_user_id }}</code></td>
+          <td>
+            {% if r.status == 'SENT' %}<span class="pill ok">{{ r.status }}</span>
+            {% elif r.status == 'FAILED' %}<span class="pill danger">{{ r.status }}</span>
+            {% else %}<span class="pill">{{ r.status }}</span>{% endif %}
+          </td>
+          <td class="muted" style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            {{ r.error or '—' }}
+          </td>
+          <td class="muted">{{ r.sent_at.strftime('%H:%M:%S') if r.sent_at else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">No recipients recorded.</p>
+  {% endif %}
+</div>
+
+{% endblock %}

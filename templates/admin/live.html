@@ -1,0 +1,116 @@
+{% extends "partials/base.html" %}
+{% block title %}Live Monitor{% endblock %}
+{% block content %}
+
+<div class="card">
+  <!-- Header (compact) -->
+  <div class="card-head" style="padding:12px 16px;">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h1 style="margin:0;font-size:16px;">🖥️ Live</h1>
+      <span id="liveDot" style="color:#22c55e;font-size:12px;">● LIVE</span>
+      <span id="liveTime" style="font-size:11px;opacity:0.6;">—</span>
+    </div>
+    <button class="btn ghost tiny" onclick="loadLive()" style="padding:4px 10px;font-size:11px;">🔄</button>
+  </div>
+
+  <!-- Stats — inline chips -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--border);">
+    <span class="chip" id="chipUsers">👥 —</span>
+    <span class="chip" id="chipShops">🏪 —</span>
+    <span class="chip" id="chipTasks">📋 —</span>
+    <span class="chip" id="chipSent">📤 —</span>
+    <span class="chip" id="chipBot">🐕 —</span>
+    <span class="chip" id="chipFlask">🌐 —</span>
+    <span class="chip" id="chipWatchdog">🐕 —</span>
+  </div>
+
+  <!-- Activity table (compact) -->
+  <div class="table-wrap" style="max-height:60vh;overflow-y:auto;">
+    <table class="table" style="font-size:12px;">
+      <thead style="position:sticky;top:0;background:var(--card-bg,#1a1a1a);z-index:1;">
+        <tr>
+          <th style="padding:6px 8px;">Time</th>
+          <th style="padding:6px 8px;">User</th>
+          <th style="padding:6px 8px;">Shop</th>
+          <th style="padding:6px 8px;">Type</th>
+          <th style="padding:6px 8px;">User Msg</th>
+          <th style="padding:6px 8px;">Bot Reply</th>
+        </tr>
+      </thead>
+      <tbody id="activityBody">
+        <tr><td colspan="6" style="text-align:center;opacity:0.5;padding:20px;">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--card-bg, #1a1a1a);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.chip.ok { color: #22c55e; }
+.chip.err { color: #ef4444; }
+</style>
+
+<script>
+async function loadLive() {
+  try {
+    const r = await fetch("/api/admin/live");
+    const d = await r.json();
+
+    document.getElementById("liveTime").textContent = d.timestamp;
+
+    // Chips
+    document.getElementById("chipUsers").textContent = "👥 " + d.users.verified + " (" + d.users.active_30m + " active)";
+    document.getElementById("chipShops").textContent = "🏪 " + d.shops.length + " · " + (d.shops.map(s => s.code).join(",") || "—");
+    document.getElementById("chipTasks").textContent = "📋 " + d.tasks.active + " active";
+    document.getElementById("chipSent").textContent = "📤 " + d.tasks.sent_today + " sent";
+
+    const botChip = document.getElementById("chipBot");
+    botChip.textContent = "🐕 Bot " + (d.processes.bot ? "✅" : "❌");
+    botChip.className = "chip " + (d.processes.bot ? "ok" : "err");
+
+    const flaskChip = document.getElementById("chipFlask");
+    flaskChip.textContent = "🌐 Flask " + (d.processes.flask ? "✅" : "❌");
+    flaskChip.className = "chip " + (d.processes.flask ? "ok" : "err");
+
+    const wdChip = document.getElementById("chipWatchdog");
+    wdChip.textContent = "🐕 Watch " + (d.processes.watchdog ? "✅" : "❌");
+    wdChip.className = "chip " + (d.processes.watchdog ? "ok" : "err");
+
+    // Table
+    const tb = document.getElementById("activityBody");
+    if (d.recent.length === 0) {
+      tb.innerHTML = '<tr><td colspan="6" style="text-align:center;opacity:0.5;padding:20px;">No activity yet</td></tr>';
+    } else {
+      tb.innerHTML = d.recent.map(a => `
+        <tr>
+          <td class="muted" style="padding:6px 8px;">${a.created_at}</td>
+          <td style="padding:6px 8px;">${a.first_name}</td>
+          <td style="padding:6px 8px;"><span class="pill">${a.shop_code}</span></td>
+          <td class="muted" style="padding:6px 8px;">${a.activity_type}</td>
+          <td class="muted" style="padding:6px 8px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${a.content}">${a.content}</td>
+          <td class="muted" style="padding:6px 8px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${a.response || ''}">${a.response || "—"}</td>
+        </tr>
+      `).join("");
+    }
+  } catch (e) {
+    console.error(e);
+    document.getElementById("liveDot").style.color = "#ef4444";
+    document.getElementById("liveDot").textContent = "● ERROR";
+  }
+}
+
+loadLive();
+setInterval(loadLive, 5000);
+</script>
+
+{% endblock %}

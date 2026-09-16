@@ -1,0 +1,117 @@
+{% extends "partials/base.html" %}
+{% set help_key = "machine_code_import" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Import Machine Codes{% endblock %}
+{% block content %}
+
+{% if mode == "upload" %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('upload', 22) }} Import Machine Codes</h1>
+      <p class="card-subtitle">Excel file ရွေးပြီး ဆိုင် (A1–A13) ကို ရွေးပါ။</p>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-group">
+      <label>Shop *</label>
+      <select name="shop" required>
+        <option value="">— Select shop —</option>
+        {% for s in shops %}
+          <option value="{{ s.code }}">{{ s.code }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Excel File (.xlsx / .xlsm / .xls) *</label>
+      <input type="file" name="file" accept=".xlsx,.xlsm,.xls" required>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn" type="submit">{{ icons.icon('upload', 16) }} Upload & Preview</button>
+      <a class="btn ghost" href="{{ url_for('admin.machine_codes_list') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+
+{% elif mode == "preview" %}
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('search', 22) }} Preview</h1>
+      <p class="card-subtitle">{{ source.original_filename }} · Shop <span class="pill accent">{{ shop.code }}</span></p>
+    </div>
+  </div>
+
+  <table class="simple">
+    <tr><th>Sheets</th><td>{{ preview.sheets|join(', ') }}</td></tr>
+    <tr><th>Total rows</th><td>{{ preview.total_rows }}</td></tr>
+    <tr><th><span class="pill ok">Valid</span></th><td>{{ preview.valid_rows|length }}</td></tr>
+    <tr><th><span class="pill warn">Invalid</span></th><td>{{ preview.invalid_rows|length }}</td></tr>
+    <tr><th><span class="pill">Duplicates</span></th><td>{{ preview.duplicate_rows|length }}</td></tr>
+    <tr><th><span class="pill danger">Conflicts</span></th><td>{{ preview.conflict_rows|length }}</td></tr>
+  </table>
+</div>
+
+{% if preview.valid_rows %}
+<div class="card">
+  <h2 class="card-title">Valid Rows (first 50)</h2>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Sheet</th><th>Row</th><th>Machine</th><th>Model</th><th>Unit</th><th>Code</th></tr></thead>
+      <tbody>
+        {% for r in preview.valid_rows[:50] %}
+        <tr>
+          <td class="muted">{{ r.sheet }}</td>
+          <td class="muted">{{ r.row_number }}</td>
+          <td>{{ r.machine_name or '—' }}</td>
+          <td class="muted">{{ r.model or '—' }}</td>
+          <td class="muted">{{ r.unit or '—' }}</td>
+          <td><span class="code">{{ r.code }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if preview.conflict_rows %}
+<div class="card">
+  <h2 class="card-title"><span class="pill danger">Conflicts</span> (skipped)</h2>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Sheet</th><th>Row</th><th>Code</th><th>Unit</th></tr></thead>
+      <tbody>
+        {% for r in preview.conflict_rows[:30] %}
+        <tr>
+          <td class="muted">{{ r.sheet }}</td>
+          <td class="muted">{{ r.row_number }}</td>
+          <td><span class="code">{{ r.code }}</span></td>
+          <td>{{ r.unit or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <form method="post" action="{{ url_for('admin.machine_codes_import_commit', source_id=source.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-actions" style="border:0;padding-top:0;">
+      <button class="btn success" type="submit" {{ 'disabled' if not preview.valid_rows }}>
+        {{ icons.icon('check', 16) }} Import {{ preview.valid_rows|length }} rows
+      </button>
+      <a class="btn ghost" href="{{ url_for('admin.machine_codes_list') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+{% endblock %}

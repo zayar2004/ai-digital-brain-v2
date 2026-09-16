@@ -1,0 +1,163 @@
+{% extends "partials/base.html" %}
+{% set help_key = "search" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Search — AI Digital Brain{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('search', 22) }} Search</h1>
+      <p class="card-subtitle">
+        Knowledge၊ Machines၊ Codes၊ Errors အားလုံးကို တစ်နေရာတည်းကနေ ရှာပါ။
+      </p>
+    </div>
+  </div>
+
+  <form method="get" class="toolbar">
+    <div class="field" style="flex:3;">
+      <label>Search query</label>
+      <input type="text" name="q" value="{{ q }}" autofocus
+             placeholder="e.g. Carnival P3 error 07, Crocodile CT, ...">
+    </div>
+    <div class="field">
+      <label>Shop</label>
+      <select name="shop">
+        <option value="">— All —</option>
+        {% for s in shops %}
+          <option value="{{ s.code }}" {{ 'selected' if current_shop == s.code }}>{{ s.code }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field" style="flex:0 0 auto;min-width:0;">
+      <label>Approved</label>
+      <select name="approved">
+        <option value="1" {{ 'selected' if only_approved }}>Approved only</option>
+        <option value="0" {{ 'selected' if not only_approved }}>Include all</option>
+      </select>
+    </div>
+    <button class="btn" type="submit">{{ icons.icon('search', 16) }} Search</button>
+  </form>
+</div>
+
+{% if not q %}
+<div class="card">
+  <div class="empty">
+    {{ icons.icon('search', 44) }}
+    <p>Search query ရိုက်ပြီး ရှာပါ။</p>
+  </div>
+</div>
+{% elif result and result.total == 0 %}
+<div class="card">
+  <div class="empty">
+    {{ icons.icon('search', 44) }}
+    <p>"{{ q }}" အတွက် ရလဒ် မတွေ့ပါ။</p>
+  </div>
+</div>
+{% elif result %}
+  {% if result.by_kind.get('knowledge') %}
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">{{ icons.icon('book', 18) }} Knowledge ({{ result.by_kind['knowledge']|length }})</h2>
+      </div>
+    </div>
+    {% for h in result.by_kind['knowledge'] %}
+    <div class="result-item">
+      <a href="{{ h.url }}" class="result-title">{{ h.title }}</a>
+      <div class="result-sub">{{ h.subtitle }} · score {{ '%.2f'|format(h.score) }}</div>
+      {% if h.snippet %}<div class="result-snippet">{{ h.snippet }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if result.by_kind.get('machine') %}
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">{{ icons.icon('tool', 18) }} Machines ({{ result.by_kind['machine']|length }})</h2>
+      </div>
+    </div>
+    {% for h in result.by_kind['machine'] %}
+    <div class="result-item">
+      <a href="{{ h.url }}" class="result-title">{{ h.title }}</a>
+      <div class="result-sub">{{ h.subtitle }} · score {{ '%.2f'|format(h.score) }}</div>
+      {% if h.snippet %}<div class="result-snippet">Aliases: {{ h.snippet }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if result.by_kind.get('code') %}
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">{{ icons.icon('key', 18) }} Machine Codes ({{ result.by_kind['code']|length }})</h2>
+      </div>
+    </div>
+    {% for h in result.by_kind['code'] %}
+    <div class="result-item">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span class="code" id="s-code-{{ h.id }}">{{ h.title }}</span>
+        <button class="btn ghost tiny" type="button" onclick="copyFrom('s-code-{{ h.id }}')">
+          {{ icons.icon('copy', 12) }} Copy
+        </button>
+      </div>
+      <div class="result-sub">{{ h.subtitle }} · score {{ '%.2f'|format(h.score) }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if result.by_kind.get('error') %}
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">{{ icons.icon('alert-triangle', 18) }} Error Knowledge ({{ result.by_kind['error']|length }})</h2>
+      </div>
+    </div>
+    {% for h in result.by_kind['error'] %}
+    <div class="result-item">
+      <a href="{{ h.url }}" class="result-title">{{ h.title }}</a>
+      <div class="result-sub">{{ h.subtitle }} · score {{ '%.2f'|format(h.score) }}</div>
+      {% if h.snippet %}<div class="result-snippet">{{ h.snippet }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if result.by_kind.get('case') %}
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">{{ icons.icon('clipboard-list', 18) }} Error Cases ({{ result.by_kind['case']|length }})</h2>
+      </div>
+    </div>
+    {% for h in result.by_kind['case'] %}
+    <div class="result-item">
+      <a href="{{ h.url }}" class="result-title">{{ h.title }}</a>
+      <div class="result-sub">{{ h.subtitle }} · score {{ '%.2f'|format(h.score) }}</div>
+      {% if h.snippet %}<div class="result-snippet">{{ h.snippet }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endif %}
+
+<style>
+  .result-item {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .result-item:last-child { border-bottom: 0; }
+  .result-title { font-weight: 600; font-size: 15px; }
+  .result-sub { font-size: 12px; color: var(--text-dim); margin-top: 3px; }
+  .result-snippet {
+    font-size: 13px; color: var(--text-mid); margin-top: 6px;
+    padding: 8px 10px; background: var(--bg); border-radius: 8px;
+    border-left: 3px solid var(--border-2);
+  }
+</style>
+
+{% endblock %}

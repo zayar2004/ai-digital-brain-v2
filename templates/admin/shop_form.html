@@ -1,0 +1,56 @@
+{% extends "partials/base.html" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}{{ 'New Shop' if mode == 'new' else 'Edit Shop' }}{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('store', 22) }} New Shop</h1>
+      <p class="card-subtitle">ဆိုင်အသစ် ဖန်တီးပါ</p>
+    </div>
+  </div>
+
+  <form method="post" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-group">
+      <label>🏪 ဆိုင်ကုဒ် (Code) *</label>
+      <input type="text" name="code" required maxlength="16"
+             value="{{ form_data.get('code', '') }}"
+             placeholder="ဥပမာ: A14"
+             style="text-transform:uppercase;">
+      <small class="hint">A-Z + 0-9 သာ — 16 characters အထိ</small>
+    </div>
+
+    <div class="form-group">
+      <label>📝 ဆိုင်နာမည် (Name)</label>
+      <input type="text" name="name" maxlength="255"
+             value="{{ form_data.get('name', '') }}"
+             placeholder="ဥပမာ: Shop 14">
+      <small class="hint">မထည့်ရင် — code ကို အသုံးပြုမယ်</small>
+    </div>
+
+    <div class="form-group">
+      <label>📄 အသေးစိတ် (Description)</label>
+      <textarea name="description" rows="3" maxlength="2000"
+                placeholder="(optional)">{{ form_data.get('description', '') }}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label>
+        <input type="checkbox" name="is_active" checked>
+        ✅ Active (ဆိုင်ကို အသုံးပြုနိုင်)
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn success" type="submit">
+        {{ icons.icon('check', 16) }} ဆိုင်ဖန်တီး
+      </button>
+      <a class="btn ghost" href="{{ url_for('admin.shops_list') }}">← Cancel</a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

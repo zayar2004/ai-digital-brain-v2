@@ -1,0 +1,119 @@
+{% extends "partials/base.html" %}
+{% set help_key = "files" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Files & Photos{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('folder', 22) }} Files & Photos</h1>
+      <p class="card-subtitle">{{ files|length }} files</p>
+    </div>
+  </div>
+
+  <form method="get" class="toolbar">
+    <div class="field">
+      <label>Shop</label>
+      <select name="shop">
+        <option value="">— All —</option>
+        {% for s in shops %}
+          <option value="{{ s.code }}" {{ 'selected' if current_shop == s.code }}>{{ s.code }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <select name="category">
+        <option value="">— All —</option>
+        {% for c in categories %}
+          <option value="{{ c }}" {{ 'selected' if current_category == c }}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field" style="flex:2;">
+      <label>Search</label>
+      <input type="text" name="q" value="{{ q }}" placeholder="filename, caption...">
+    </div>
+    <button class="btn secondary" type="submit">{{ icons.icon('search', 16) }} Filter</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2 class="card-title">{{ icons.icon('upload', 18) }} Upload</h2>
+
+  <form method="post" action="{{ url_for('admin.files_upload') }}" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="row">
+      <div class="form-group">
+        <label>Shop (optional)</label>
+        <select name="shop">
+          <option value="">— None —</option>
+          {% for s in shops %}<option value="{{ s.code }}">{{ s.code }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Category (optional)</label>
+        <select name="category">
+          <option value="">Auto-detect</option>
+          {% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>File *</label>
+      <input type="file" name="file" required>
+    </div>
+
+    <div class="form-group">
+      <label>Caption</label>
+      <input type="text" name="caption" maxlength="500">
+    </div>
+
+    <div class="form-group">
+      <label>Description</label>
+      <textarea name="description" rows="2"></textarea>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn" type="submit">{{ icons.icon('upload', 16) }} Upload</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">📋 Files ({{ files|length }})</h2>
+    </div>
+  </div>
+
+  {% if files %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Shop</th><th>Category</th><th>Name</th><th>Size</th><th>When</th><th></th></tr></thead>
+      <tbody>
+        {% for f in files %}
+        <tr>
+          <td>{% if f.shop %}<span class="pill accent">{{ f.shop.code }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+          <td><span class="pill">{{ f.category }}</span></td>
+          <td><a href="{{ url_for('admin.file_detail', media_id=f.id) }}">{{ f.original_filename }}</a></td>
+          <td class="muted">{{ ((f.size_bytes or 0) / 1024) | round(1) }} KB</td>
+          <td class="muted">{{ f.created_at.strftime('%Y-%m-%d %H:%M') if f.created_at else '' }}</td>
+          <td>
+            <a class="btn ghost tiny" href="{{ url_for('admin.file_download', media_id=f.id) }}"
+               title="Download">{{ icons.icon('download', 12) }}</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">{{ icons.icon('folder', 40) }}<p>No files yet.</p></div>
+  {% endif %}
+</div>
+
+{% endblock %}

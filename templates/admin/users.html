@@ -1,0 +1,76 @@
+{% extends "partials/base.html" %}
+{% set help_key = "admin_users" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Admin Users — AI Digital Brain{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('users', 22) }} Admin Users</h1>
+      <p class="card-subtitle">{{ users|length }} users</p>
+    </div>
+    <a class="btn" href="{{ url_for('admin.user_new') }}">
+      {{ icons.icon('plus', 16) }} New User
+    </a>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr><th>#</th><th>Username</th><th>Full Name</th><th>Role</th><th>Active</th><th>Last login</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td class="muted">{{ u.id }}</td>
+          <td>
+            {{ u.username }}
+            {% if u.id == current_user.id %}<span class="pill">you</span>{% endif %}
+          </td>
+          <td>{{ u.full_name or '—' }}</td>
+          <td>
+            {% if u.role == 'SUPER_ADMIN' %}<span class="pill accent">{{ u.role }}</span>
+            {% elif u.role == 'ADMIN' %}<span class="pill ok">{{ u.role }}</span>
+            {% elif u.role == 'EDITOR' %}<span class="pill warn">{{ u.role }}</span>
+            {% else %}<span class="pill">{{ u.role }}</span>{% endif %}
+          </td>
+          <td>
+            {% if u.is_active %}<span class="pill ok">active</span>
+            {% else %}<span class="pill danger">disabled</span>{% endif %}
+          </td>
+          <td class="muted">{{ u.last_login_at.strftime('%Y-%m-%d %H:%M') if u.last_login_at else '—' }}</td>
+          <td>
+            <a class="btn ghost tiny" href="{{ url_for('admin.user_edit', user_id=u.id) }}">
+              {{ icons.icon('edit', 12) }}
+            </a>
+            {% if u.id != current_user.id %}
+            <form method="post" action="{{ url_for('admin.user_toggle', user_id=u.id) }}"
+                  style="display:inline;" onsubmit="return customConfirm(event, 'Status ပြောင်းမလား?', 'warn');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn ghost tiny" type="submit">
+                {% if u.is_active %}Disable{% else %}Enable{% endif %}
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">{{ icons.icon('users', 18) }} Telegram Users</h2>
+      <p class="card-subtitle">Telegram account တွေကို ဆိုင်တွေနဲ့ ချိတ်ဆက်ရန်</p>
+    </div>
+    <a class="btn ghost tiny" href="{{ url_for('admin.telegram_users_list') }}">
+      {{ icons.icon('chevron-right', 14) }} Manage Telegram Users
+    </a>
+  </div>
+</div>
+
+{% endblock %}

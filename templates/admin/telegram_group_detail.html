@@ -1,0 +1,98 @@
+{% extends "partials/base.html" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}Group {{ group.chat_id }} — AI Digital Brain{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">💬 {{ group.title or 'Group' }}</h1>
+      <p class="card-subtitle">
+        Chat ID: <code>{{ group.chat_id }}</code>
+        · Type: {{ group.chat_type or '—' }}
+        · Messages: {{ group.message_count }}
+      </p>
+    </div>
+    <a class="btn ghost tiny" href="{{ url_for('admin.telegram_groups_list') }}">← All Groups</a>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <form method="post" action="{{ url_for('admin.telegram_group_toggle', chat_id=group.chat_id) }}" style="display:inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn {% if group.is_enabled %}danger{% else %}success{% endif %}" type="submit">
+        {% if group.is_enabled %}Disable{% else %}Enable{% endif %}
+      </button>
+    </form>
+    <form method="post" action="{{ url_for('admin.telegram_group_remove', chat_id=group.chat_id) }}"
+          style="display:inline;"
+          onsubmit="return customConfirm(event, 'Group ကို remove လုပ်မလား?', 'danger');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn ghost" type="submit">🗑 Remove</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <h2 class="card-title">⚙️ Configuration</h2>
+  <form method="post" action="{{ url_for('admin.telegram_group_edit', chat_id=group.chat_id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-group">
+      <label>Allowed Topic IDs</label>
+      <textarea name="threads" rows="4" maxlength="2000"
+                placeholder="5&#10;12&#10;15">{{ group.thread_list()|join('\n') }}</textarea>
+      <div class="field-hint">
+        Topic တစ်ခုချင်း — <strong>ID ကို</strong> — တစ်ကြောင်းတစ်လုံး ထည့်ပါ။<br>
+        ဗလာထားရင် — Topic အားလုံးမှာ Bot ဖြေမယ်။
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" name="reply_in_thread" style="width:auto;"
+               {{ 'checked' if group.reply_in_thread }}>
+        Reply in same topic
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" name="require_mention" style="width:auto;"
+               {{ 'checked' if group.require_mention }}>
+        Only reply if @bot mentioned
+      </label>
+    </div>
+
+    <div class="form-actions" style="border:0;padding-top:0;">
+      <button class="btn" type="submit">💾 Save</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h2 class="card-title">📊 Stats</h2>
+  <table class="simple">
+    <tr><th>Chat ID</th><td><code>{{ group.chat_id }}</code></td></tr>
+    <tr><th>Type</th><td>{{ group.chat_type or '—' }}</td></tr>
+    <tr><th>Status</th><td>
+      {% if group.is_enabled %}<span class="pill ok">Enabled</span>{% else %}<span class="pill danger">Disabled</span>{% endif %}
+    </td></tr>
+    <tr><th>Allowed Topics</th><td>{{ group.thread_list() or 'All' }}</td></tr>
+    <tr><th>Require mention</th><td>{{ group.require_mention }}</td></tr>
+    <tr><th>Reply in thread</th><td>{{ group.reply_in_thread }}</td></tr>
+    <tr><th>Messages</th><td>{{ group.message_count }}</td></tr>
+    <tr><th>Last activity</th><td>{{ group.last_message_at.strftime('%Y-%m-%d %H:%M') if group.last_message_at else '—' }}</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2 class="card-title">📖 Setup</h2>
+  <ol style="color:var(--text-mid);font-size:14px;line-height:1.8;padding-left:20px;">
+    <li>Group → <code>🤖 AI Bot</code> Topic → <code>/setup</code> ပို့</li>
+    <li>Bot → reply + auto add thread_id</li>
+    <li>ဒီ page ကို refresh → Allowed Topics တွေ့မယ်</li>
+    <li>Save → Bot က အဲ့ topic မှာပဲ ဖြေမယ်</li>
+  </ol>
+</div>
+
+{% endblock %}

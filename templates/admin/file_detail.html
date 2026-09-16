@@ -1,0 +1,51 @@
+{% extends "partials/base.html" %}
+{% set help_key = "files" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}{{ media.original_filename }} — File{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('file-text', 22) }} {{ media.original_filename }}</h1>
+      <p class="card-subtitle">
+        Shop <span class="pill accent">{{ media.shop.code if media.shop else '—' }}</span>
+        · Category <span class="pill">{{ media.category }}</span>
+      </p>
+    </div>
+  </div>
+
+  {% if media.category == 'image' %}
+  <div style="margin:10px 0;">
+    <img src="{{ url_for('admin.file_download', media_id=media.id) }}"
+         style="max-width:100%;border-radius:12px;border:1px solid var(--border);" alt="preview">
+  </div>
+  {% endif %}
+
+  <table class="simple">
+    <tr><th>Original name</th><td>{{ media.original_filename }}</td></tr>
+    <tr><th>MIME</th><td>{{ media.mime_type or '—' }}</td></tr>
+    <tr><th>Size</th><td>{{ ((media.size_bytes or 0) / 1024) | round(1) }} KB</td></tr>
+    <tr><th>SHA256</th><td class="muted" style="word-break:break-all;font-family:var(--font-mono);font-size:12px;">{{ media.file_hash or '—' }}</td></tr>
+    <tr><th>Caption</th><td>{{ media.caption or '—' }}</td></tr>
+    <tr><th>Description</th><td>{{ media.description or '—' }}</td></tr>
+    <tr><th>Uploaded by</th><td>{{ media.uploaded_by.username if media.uploaded_by else '—' }}</td></tr>
+    <tr><th>Uploaded at</th><td class="muted">{{ media.created_at.strftime('%Y-%m-%d %H:%M') if media.created_at else '' }}</td></tr>
+  </table>
+
+  <div class="form-actions">
+    <a class="btn" href="{{ url_for('admin.file_download', media_id=media.id) }}">
+      {{ icons.icon('download', 16) }} Download
+    </a>
+    {% if current_user.role in ['SUPER_ADMIN', 'ADMIN'] %}
+    <form method="post" action="{{ url_for('admin.file_delete', media_id=media.id) }}"
+          onsubmit="return customConfirm(event, 'ဖိုင် ဖျက်မလား?', 'danger');" style="display:inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn danger" type="submit">{{ icons.icon('trash', 16) }} Delete</button>
+    </form>
+    {% endif %}
+    <a class="btn ghost" href="{{ url_for('admin.files_list') }}">← Back</a>
+  </div>
+</div>
+
+{% endblock %}

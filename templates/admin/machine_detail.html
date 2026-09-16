@@ -1,0 +1,96 @@
+{% extends "partials/base.html" %}
+{% set help_key = "machine_detail" %}
+{% import "partials/icons.html" as icons %}
+{% block title %}{{ machine.name }} — Machine{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 style="margin:0;">{{ icons.icon('tool', 22) }} {{ machine.name }}</h1>
+      <p class="card-subtitle">
+        Shop <span class="pill accent">{{ machine.shop.code if machine.shop else '—' }}</span>
+        · Status
+        {% if machine.status == 'ACTIVE' %}<span class="pill ok">{{ machine.status }}</span>
+        {% elif machine.status == 'MAINTENANCE' %}<span class="pill warn">{{ machine.status }}</span>
+        {% else %}<span class="pill">{{ machine.status }}</span>{% endif %}
+      </p>
+    </div>
+  </div>
+
+  <table class="simple">
+    <tr><th>Model</th><td>{{ machine.model or '—' }}</td></tr>
+    <tr><th>Unit</th><td>{{ machine.unit or '—' }}</td></tr>
+    <tr><th>Description</th><td>{{ machine.description or '—' }}</td></tr>
+  </table>
+
+  <div class="form-actions" style="border:0;padding-top:14px;">
+    <a class="btn" href="{{ url_for('admin.machine_edit', machine_id=machine.id) }}">
+      {{ icons.icon('edit', 16) }} Edit
+    </a>
+    {% if current_user.role in ['SUPER_ADMIN', 'ADMIN'] %}
+    <form method="post" action="{{ url_for('admin.machine_archive', machine_id=machine.id) }}"
+          onsubmit="return customConfirm(event, 'Archive လုပ်မလား?', 'danger');" style="display:inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn danger" type="submit">{{ icons.icon('trash', 16) }} Archive</button>
+    </form>
+    {% endif %}
+    <a class="btn ghost" href="{{ url_for('admin.machines_list') }}">← Back</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">{{ icons.icon('key', 18) }} Aliases</h2>
+      <p class="card-subtitle">{{ machine.aliases|length }} aliases</p>
+    </div>
+  </div>
+
+  {% if machine.aliases %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Alias</th><th>Type</th><th></th></tr></thead>
+      <tbody>
+        {% for a in machine.aliases %}
+        <tr>
+          <td><span class="code">{{ a.alias }}</span></td>
+          <td class="muted">{{ a.alias_type }}</td>
+          <td>
+            <form method="post" action="{{ url_for('admin.machine_alias_remove', alias_id=a.id) }}"
+                  onsubmit="return customConfirm(event, 'Alias ဖျက်မလား?', 'danger');" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn ghost tiny" type="submit">{{ icons.icon('x', 12) }}</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">{{ icons.icon('key', 40) }}<p>No aliases yet.</p></div>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('admin.machine_alias_add', machine_id=machine.id) }}"
+        class="toolbar" style="margin-top:16px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field" style="flex:2;">
+      <label>Add alias</label>
+      <input type="text" name="alias" required maxlength="255" placeholder="Croc / CT / ...">
+    </div>
+    <div class="field">
+      <label>Type</label>
+      <select name="alias_type">
+        <option value="KEYWORD">KEYWORD</option>
+        <option value="SHORT">SHORT</option>
+        <option value="ABBREVIATION">ABBREVIATION</option>
+        <option value="ALTERNATIVE">ALTERNATIVE</option>
+        <option value="MISSPELLING">MISSPELLING</option>
+      </select>
+    </div>
+    <button class="btn" type="submit">{{ icons.icon('plus', 16) }} Add</button>
+  </form>
+</div>
+
+{% endblock %}
