@@ -3,18 +3,98 @@
 {% block title %}Dashboard — AI Digital Brain{% endblock %}
 {% block content %}
 
-<!-- Welcome -->
-<div class="card">
-  <div class="card-head">
+<!-- ==== Welcome Bar ==== -->
+<div class="card" style="background: linear-gradient(135deg, rgba(99,102,241,.08), transparent);padding:16px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
     <div>
-      <h1 style="margin:0;font-size:22px;">
+      <h1 style="margin:0;font-size:20px;">
         မင်္ဂလာပါ {{ user.full_name or user.username }} 👋
       </h1>
-      <p class="card-subtitle" style="margin-top:6px;">
+      <p class="muted" style="margin:4px 0 0;font-size:12px;">
         <span class="pill accent">{{ user.role }}</span>
-        · ဒီနေ့ <strong>{{ today }}</strong>
+        · {{ today }}
       </p>
     </div>
+    <div style="display:flex;gap:6px;">
+      <a href="{{ url_for('admin.live_monitor') }}" class="btn ghost tiny">🖥️ Live</a>
+      <a href="{{ url_for('admin.teach_quick') }}" class="btn tiny">⚡ Quick Teach</a>
+    </div>
+  </div>
+</div>
+
+<!-- ==== Top Stats Bar — 6 cards ==== -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;">
+  <a href="{{ url_for('admin.live_monitor') }}" class="d-stat">
+    <div class="d-ico">👥</div>
+    <div class="d-num" id="dsUsers">—</div>
+    <div class="d-lbl">Users</div>
+  </a>
+  <a href="{{ url_for('admin.shops_list') }}" class="d-stat">
+    <div class="d-ico">🏪</div>
+    <div class="d-num">{{ shops|length }}</div>
+    <div class="d-lbl">Shops</div>
+  </a>
+  <a href="{{ url_for('admin.tasks_list', tab='all') }}" class="d-stat">
+    <div class="d-ico">📋</div>
+    <div class="d-num">{{ counts.tasks }}</div>
+    <div class="d-lbl">Tasks</div>
+  </a>
+  <a href="{{ url_for('admin.live_monitor') }}" class="d-stat">
+    <div class="d-ico">📤</div>
+    <div class="d-num" id="dsMsgs">—</div>
+    <div class="d-lbl">Msgs</div>
+  </a>
+  <a href="{{ url_for('admin.live_monitor') }}" class="d-stat">
+    <div class="d-ico">⏱️</div>
+    <div class="d-num" id="dsDur">—</div>
+    <div class="d-lbl">Avg ms</div>
+  </a>
+  <a href="{{ url_for('admin.live_monitor') }}" class="d-stat">
+    <div class="d-ico" id="dsErrIco">❌</div>
+    <div class="d-num" id="dsErr">—</div>
+    <div class="d-lbl">Errors</div>
+  </a>
+</div>
+
+<!-- ==== Live System — MAIN ==== -->
+<div class="card" id="dashLiveSection" style="border-color: rgba(48,209,88,.3);">
+  <div class="card-head" style="padding:12px 16px;">
+    <div>
+      <h2 class="card-title" style="margin:0;">🖥️ Live System</h2>
+      <p class="muted" id="dashLiveTime" style="margin:4px 0 0;font-size:11px;">—</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span id="dashLiveDot" style="color:#22c55e;font-size:12px;">● LIVE</span>
+      <a href="{{ url_for('admin.live_monitor') }}" class="btn ghost tiny">Full →</a>
+    </div>
+  </div>
+
+  <!-- Status chips -->
+  <div style="display:flex;gap:6px;flex-wrap:wrap;padding:8px 16px 12px;">
+    <span class="d-chip" id="dashChipBot">🐕 Bot —</span>
+    <span class="d-chip" id="dashChipFlask">🌐 Flask —</span>
+    <span class="d-chip" id="dashChipWatchdog">🐕 Watchdog —</span>
+    <span class="d-chip" id="dashChipUsers">👥 —</span>
+    <span class="d-chip" id="dashChipActive">🟢 —</span>
+    <span class="d-chip" id="dashChipTasks">📋 —</span>
+  </div>
+
+  <!-- Recent 5 activity -->
+  <div class="table-wrap" style="max-height:45vh;overflow-y:auto;">
+    <table class="table" style="font-size:12px;">
+      <thead style="position:sticky;top:0;background:var(--card-bg,#1a1a1a);z-index:1;">
+        <tr>
+          <th style="padding:6px 8px;width:70px;">Time</th>
+          <th style="padding:6px 8px;width:90px;">User</th>
+          <th style="padding:6px 8px;width:70px;">Type</th>
+          <th style="padding:6px 8px;">User Msg</th>
+          <th style="padding:6px 8px;">Bot Reply</th>
+        </tr>
+      </thead>
+      <tbody id="dashLiveBody">
+        <tr><td colspan="5" style="text-align:center;opacity:0.5;padding:12px;">Loading...</td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
@@ -23,41 +103,20 @@
 <div class="card" style="border-color: rgba(255,159,10,.3); background: linear-gradient(135deg, rgba(255,159,10,.06), transparent);">
   <div class="card-head">
     <div>
-      <h2 class="card-title" style="color: var(--warn);">
-        🔴 လုပ်ရမယ့်အလုပ်
-      </h2>
-      <p class="card-subtitle">{{ action_items|length }} item(s) လုပ်ရန် လိုတယ်</p>
+      <h2 class="card-title" style="color: var(--warn);">🔴 လုပ်ရမယ့်အလုပ် ({{ action_items|length }})</h2>
     </div>
   </div>
-
-  <div style="display:grid;gap:10px;">
+  <div style="display:grid;gap:8px;">
     {% for item in action_items %}
-    <a href="{{ item.url }}"
-       style="display:flex;align-items:center;gap:12px;
-              padding:14px 16px;
-              background:var(--bg);
-              border:1px solid var(--border);
-              border-radius:12px;
-              text-decoration:none;color:var(--text);
-              transition: transform .1s;">
-      <span style="font-size:24px;flex-shrink:0;">{{ item.icon }}</span>
+    <a href="{{ item.url }}" class="d-action">
+      <span style="font-size:22px;flex-shrink:0;">{{ item.icon }}</span>
       <div style="flex:1;">
-        <div style="font-weight:600;font-size:15px;">{{ item.title }}</div>
-        <div class="muted" style="font-size:12px;margin-top:2px;">{{ item.hint }}</div>
+        <div style="font-weight:600;font-size:14px;">{{ item.title }}</div>
+        <div class="muted" style="font-size:11px;margin-top:2px;">{{ item.hint }}</div>
       </div>
-      <span style="font-size:20px;color:var(--text-dim);">›</span>
+      <span style="font-size:18px;color:var(--text-dim);">›</span>
     </a>
     {% endfor %}
-  </div>
-</div>
-{% else %}
-<div class="card" style="border-color: rgba(48,209,88,.3); background: linear-gradient(135deg, rgba(48,209,88,.06), transparent);">
-  <div style="display:flex;align-items:center;gap:12px;">
-    <span style="font-size:32px;">✅</span>
-    <div>
-      <h2 style="margin:0;font-size:16px;color:var(--ok);">လုပ်ရမယ့်အလုပ် မရှိပါ</h2>
-      <p class="muted" style="margin:2px 0 0;">အားလုံး ပြီးပါပြီ</p>
-    </div>
   </div>
 </div>
 {% endif %}
@@ -65,134 +124,156 @@
 <!-- ==== Quick Actions ==== -->
 <div class="card">
   <h2 class="card-title">⚡ Quick Actions</h2>
-  <div class="row" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">
-    <a class="btn" href="{{ url_for('admin.teach_quick') }}" style="justify-content:center;">
-      ⚡ Quick Teach
-    </a>
-    <a class="btn ghost" href="{{ url_for('admin.machine_codes_import') }}" style="justify-content:center;">
-      📥 Import Excel
-    </a>
-    <a class="btn ghost" href="{{ url_for('admin.broadcast_page') }}" style="justify-content:center;">
-      📢 Broadcast
-    </a>
-    <a class="btn ghost" href="{{ url_for('admin.analytics_dashboard') }}" style="justify-content:center;">
-      📊 Analytics
-    </a>
-    <a class="btn ghost" href="{{ url_for('admin.knowledge_list', status='PENDING') }}" style="justify-content:center;">
-      📖 Pending
-    </a>
-    <a class="btn ghost" href="{{ url_for('admin.tasks_list', tab='today') }}" style="justify-content:center;">
-      📋 Today Tasks
-    </a>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;">
+    <a class="d-quick" href="{{ url_for('admin.teach_quick') }}">⚡ Quick Teach</a>
+    <a class="d-quick" href="{{ url_for('admin.machine_codes_import') }}">📥 Import Excel</a>
+    <a class="d-quick" href="{{ url_for('admin.broadcast_page') }}">📢 Broadcast</a>
+    <a class="d-quick" href="{{ url_for('admin.analytics_dashboard') }}">📊 Analytics</a>
+    <a class="d-quick" href="{{ url_for('admin.knowledge_list', status='PENDING') }}">📖 Pending</a>
+    <a class="d-quick" href="{{ url_for('admin.tasks_list', tab='today') }}">📋 Today</a>
   </div>
 </div>
 
-<!-- ==== System Health ==== -->
-<div class="card">
-  <h2 class="card-title">📊 System Status</h2>
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
-    <div style="padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-      <div class="muted" style="font-size:11px;">DATABASE</div>
-      <div style="font-size:14px;margin-top:4px;">
-        {% if health.database == 'ok' %}🟢 OK{% else %}🔴 Error{% endif %}
-      </div>
-    </div>
-    <div style="padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-      <div class="muted" style="font-size:11px;">AI</div>
-      <div style="font-size:14px;margin-top:4px;">
-        {% if health.ai %}🟢 {{ health.ai }}{% else %}⚪ Off{% endif %}
-      </div>
-    </div>
-    <div style="padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-      <div class="muted" style="font-size:11px;">TELEGRAM</div>
-      <div style="font-size:14px;margin-top:4px;">
-        {% if health.telegram %}🟢 Ready{% else %}⚪ Off{% endif %}
-      </div>
-    </div>
-    <div style="padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-      <div class="muted" style="font-size:11px;">BACKUP</div>
-      <div style="font-size:14px;margin-top:4px;">
-        {{ health.backup_ago or 'never' }}
-      </div>
-    </div>
-  </div>
-</div>
+<style>
+.d-stat {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card-bg, #1a1a1a);
+  text-align: center;
+  text-decoration: none;
+  color: var(--text);
+  transition: transform .15s, border-color .15s;
+}
+.d-stat:hover {
+  transform: translateY(-2px);
+  border-color: #6366f1;
+}
+.d-ico { font-size: 18px; }
+.d-num { font-size: 20px; font-weight: 700; margin: 2px 0; }
+.d-lbl { font-size: 10px; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.5px; }
 
-<!-- ==== Content Counts ==== -->
-<div class="card">
-  <h2 class="card-title">📚 Content</h2>
-  <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(120px,1fr));">
-    <a href="{{ url_for('admin.knowledge_list') }}" style="text-decoration:none;" class="grid-item">
-      <div class="code">{{ counts.knowledge }}</div>
-      <div class="muted" style="font-size:11px;">📖 Knowledge</div>
-    </a>
-    <a href="{{ url_for('admin.errors_list') }}" style="text-decoration:none;" class="grid-item">
-      <div class="code">{{ counts.errors }}</div>
-      <div class="muted" style="font-size:11px;">⚠️ Errors</div>
-    </a>
-    <a href="{{ url_for('admin.error_cases_list') }}" style="text-decoration:none;" class="grid-item">
-      <div class="code">{{ counts.cases }}</div>
-      <div class="muted" style="font-size:11px;">📋 Cases</div>
-    </a>
-    <a href="{{ url_for('admin.machines_list') }}" style="text-decoration:none;" class="grid-item">
-      <div class="code">{{ counts.machines }}</div>
-      <div class="muted" style="font-size:11px;">🔧 Machines</div>
-    </a>
-    <a href="{{ url_for('admin.machine_codes_list') }}" style="text-decoration:none;" class="grid-item">
-      <div class="code">{{ counts.codes }}</div>
-      <div class="muted" style="font-size:11px;">🔑 Codes</div>
-    </a>
-    <a href="{{ url_for('admin.tasks_list', tab='all') }}" style="text-decoration:none;" class="grid-item">
-      <div class="code">{{ counts.tasks }}</div>
-      <div class="muted" style="font-size:11px;">📋 Tasks</div>
-    </a>
-  </div>
-</div>
+.d-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--card-bg, #1a1a1a);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.d-chip.ok { color: #22c55e; border-color: #22c55e; }
+.d-chip.err { color: #ef4444; border-color: #ef4444; }
 
-<!-- ==== Shops ==== -->
-<div class="card">
-  <div class="card-head">
-    <div>
-      <h2 class="card-title">🏪 Shops ({{ shops|length }})</h2>
-    </div>
-    <a class="btn ghost tiny" href="{{ url_for('admin.shops_list') }}">View all</a>
-  </div>
-  <div class="grid">
-    {% for s in shops %}
-      <div class="grid-item"><div class="code">{{ s.code }}</div></div>
-    {% endfor %}
-  </div>
-</div>
+.d-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--text);
+  transition: transform .1s, border-color .15s;
+}
+.d-action:hover {
+  transform: translateX(4px);
+  border-color: #6366f1;
+}
 
-<!-- ==== Recent Activity ==== -->
-<div class="card">
-  <div class="card-head">
-    <div>
-      <h2 class="card-title">📜 Recent Activity</h2>
-    </div>
-    {% if current_user.role in ['SUPER_ADMIN', 'ADMIN'] %}
-    <a class="btn ghost tiny" href="{{ url_for('admin.audit_list') }}">View all</a>
-    {% endif %}
-  </div>
+.d-quick {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--text);
+  font-size: 12px;
+  transition: border-color .15s, transform .1s;
+}
+.d-quick:hover {
+  border-color: #6366f1;
+  transform: translateY(-2px);
+}
+</style>
 
-  {% if recent_audit %}
-  <div class="table-wrap">
-    <table class="table">
-      <thead><tr><th>Action</th><th>Actor</th><th>When</th></tr></thead>
-      <tbody>
-        {% for a in recent_audit %}
+<script>
+async function loadDashLive() {
+  try {
+    const r = await fetch("/api/admin/live?limit=8");
+    const d = await r.json();
+
+    // Top stats
+    document.getElementById("dsUsers").textContent = d.stats?.users_verified || 0;
+    document.getElementById("dsMsgs").textContent = d.stats?.msgs_today || 0;
+    document.getElementById("dsDur").textContent = d.stats?.duration_avg_ms || 0;
+    const errCount = d.stats?.errors_today || 0;
+    document.getElementById("dsErr").textContent = errCount;
+    if (errCount > 0) {
+      document.getElementById("dsErrIco").textContent = "🔴";
+    }
+
+    // Live header
+    document.getElementById("dashLiveTime").textContent = d.timestamp || "—";
+
+    const setChip = (id, label, ok) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = label;
+      el.className = "d-chip " + (ok === null ? "" : ok ? "ok" : "err");
+    };
+
+    setChip("dashChipBot", "🐕 Bot " + (d.processes?.bot ? "✅" : "❌"), d.processes?.bot);
+    setChip("dashChipFlask", "🌐 Flask " + (d.processes?.flask ? "✅" : "❌"), d.processes?.flask);
+    setChip("dashChipWatchdog", "🐕 Watchdog " + (d.processes?.watchdog ? "✅" : "❌"), d.processes?.watchdog);
+    setChip("dashChipUsers", "👥 " + (d.stats?.users_verified || 0), null);
+    setChip("dashChipActive", "🟢 " + (d.stats?.users_active_30m || 0) + " active", null);
+    setChip("dashChipTasks", "📋 " + (d.tasks?.active || 0), null);
+
+    // Activity table
+    const tb = document.getElementById("dashLiveBody");
+    if (!d.recent || d.recent.length === 0) {
+      tb.innerHTML = '<tr><td colspan="5" style="text-align:center;opacity:0.5;padding:12px;">No activity</td></tr>';
+      return;
+    }
+
+    tb.innerHTML = d.recent.map(a => {
+      const tCls = a.activity_type === "command" ? "color:#f59e0b;"
+                  : a.activity_type === "callback" ? "color:#8b5cf6;"
+                  : a.activity_type === "error" ? "color:#ef4444;"
+                  : "color:#3b82f6;";
+      return `
         <tr>
-          <td><span class="code">{{ a.action }}</span></td>
-          <td>{{ a.actor_label or '—' }}</td>
-          <td class="muted">{{ a.created_at.strftime('%m-%d %H:%M') if a.created_at else '' }}</td>
+          <td class="muted" style="padding:5px 8px;">${a.created_at || "—"}</td>
+          <td style="padding:5px 8px;">${a.first_name || "—"}</td>
+          <td style="padding:5px 8px;font-size:11px;${tCls}">${a.activity_type || "—"}</td>
+          <td class="muted" style="padding:5px 8px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(a.content)}">${esc(a.content)}</td>
+          <td class="muted" style="padding:5px 8px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(a.response)}">${esc(a.response)}</td>
         </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <div class="empty">{{ icons.icon('activity', 40) }}<p>No activity yet.</p></div>
-  {% endif %}
-</div>
+      `;
+    }).join("");
+  } catch (e) {
+    console.error(e);
+    const dot = document.getElementById("dashLiveDot");
+    if (dot) { dot.style.color = "#ef4444"; dot.textContent = "● ERROR"; }
+  }
+}
+
+function esc(s) {
+  if (!s) return "";
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[c]);
+}
+
+loadDashLive();
+setInterval(loadDashLive, 10000);
+</script>
 
 {% endblock %}

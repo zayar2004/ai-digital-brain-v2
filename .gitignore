@@ -46,3 +46,6 @@ portable.zip
 *.messy
 *.old
 *~
+
+# Exception: .env template
+!.env.example

@@ -25,3 +25,7 @@ class BotActivity(BaseModel):
     # ★ Bot response
     response = db.Column(db.Text, nullable=True)
     response_type = db.Column(db.String(32), nullable=True)
+
+    # ★ Live v2 — duration + error
+    duration_ms = db.Column(db.Integer, nullable=True)
+    error = db.Column(db.Text, nullable=True)

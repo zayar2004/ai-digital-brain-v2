@@ -49,10 +49,43 @@ def run_polling() -> None:
             # --- Callback query (inline button) ---
             cb = upd.get("callback_query")
             if cb:
+                import time as _t
+                _t0 = _t.time()
+                _cb_error = None
+                _cb_ok = True
+                _cb_data = cb.get("data") or ""
+                _cb_msg = cb.get("message") or {}
+                _cb_chat = (_cb_msg.get("chat") or {}).get("id")
+                _cb_user = (cb.get("from") or {})
+                _cb_uid = _cb_user.get("id")
+                _cb_fname = _cb_user.get("first_name") or "—"
+
                 try:
                     handlers.handle_callback(cb)
                 except Exception as e:
+                    _cb_error = str(e)[:500]
+                    _cb_ok = False
                     log.exception("callback failed: %s", e)
+
+                _cb_dur = int((_t.time() - _t0) * 1000)
+
+                # ★ Log callback
+                try:
+                    from app.services.activity_log import log_activity
+                    log_activity(
+                        telegram_user_id=_cb_uid,
+                        first_name=_cb_fname,
+                        activity_type="callback",
+                        content=_cb_data[:500],
+                        response=f"ok={_cb_ok}",
+                        response_type="callback",
+                        response_ok=_cb_ok,
+                        duration_ms=_cb_dur,
+                        error=_cb_error,
+                        chat_id=_cb_chat,
+                    )
+                except Exception:
+                    pass
                 continue
 
             # --- Message ---
@@ -139,10 +172,22 @@ def run_polling() -> None:
 
                 # ---------- Private chat ----------
                 if cmd:
-                    reply = handlers.handle_command(
-                        cmd, text, chat_id, tg_id,
-                        tg_username, first_name, last_name,
-                    )
+                    import time as _t
+                    _t0 = _t.time()
+                    _cmd_error = None
+                    _response_ok = True
+                    try:
+                        reply = handlers.handle_command(
+                            cmd, text, chat_id, tg_id,
+                            tg_username, first_name, last_name,
+                        )
+                    except Exception as _ce:
+                        _cmd_error = str(_ce)[:500]
+                        _response_ok = False
+                        reply = "⚠️ Internal error."
+                        log.exception("command failed: %s", _ce)
+                    _duration = int((_t.time() - _t0) * 1000)
+
                     if isinstance(reply, tuple):
                         body, kb = reply
                     else:
@@ -150,7 +195,7 @@ def run_polling() -> None:
                     if body:
                         handlers.send_message(chat_id, body, reply_markup=kb)
 
-                        # ★ Live activity log
+                        # ★ Live activity log (v2)
                         try:
                             from app.services.activity_log import log_activity
                             _act_type = "command" if text.startswith("/") else "message"
@@ -159,6 +204,13 @@ def run_polling() -> None:
                             _m = _re.match(r"^(A\d{1,2})\b", text)
                             if _m:
                                 _shop = _m.group(1)
+                            # response_type
+                            if _cmd_error:
+                                _resp_type = "error"
+                            elif body.startswith("⚠️"):
+                                _resp_type = "error"
+                            else:
+                                _resp_type = "text"
                             log_activity(
                                 telegram_user_id=tg_id,
                                 first_name=first_name,
@@ -166,16 +218,32 @@ def run_polling() -> None:
                                 activity_type=_act_type,
                                 content=text,
                                 response=body,
+                                response_type=_resp_type,
+                                response_ok=_response_ok,
+                                duration_ms=_duration,
+                                error=_cmd_error,
                                 chat_id=chat_id,
                                 thread_id=thread_id,
                             )
                         except Exception:
                             pass
                 else:
-                    result = handlers.handle_text(
-                        text, chat_id, tg_id,
-                        tg_username, first_name, last_name,
-                    )
+                    import time as _t
+                    _t0 = _t.time()
+                    _msg_error = None
+                    _response_ok = True
+                    try:
+                        result = handlers.handle_text(
+                            text, chat_id, tg_id,
+                            tg_username, first_name, last_name,
+                        )
+                    except Exception as _me:
+                        _msg_error = str(_me)[:500]
+                        _response_ok = False
+                        result = "⚠️ Internal error."
+                        log.exception("handle_text failed: %s", _me)
+                    _duration = int((_t.time() - _t0) * 1000)
+
                     if isinstance(result, tuple):
                         body, kb = result
                     else:
@@ -183,15 +251,20 @@ def run_polling() -> None:
                     if body:
                         handlers.send_message(chat_id, body, reply_markup=kb)
 
-                        # ★ Live activity log
+                        # ★ Live activity log (v2)
                         try:
                             from app.services.activity_log import log_activity
-                            _act_type = "command" if text.startswith("/") else "message"
+                            _act_type = "message"
                             _shop = None
                             import re as _re
                             _m = _re.match(r"^(A\d{1,2})\b", text)
                             if _m:
                                 _shop = _m.group(1)
+                            # response_type
+                            if _msg_error:
+                                _resp_type = "error"
+                            else:
+                                _resp_type = "text"
                             log_activity(
                                 telegram_user_id=tg_id,
                                 first_name=first_name,
@@ -199,6 +272,10 @@ def run_polling() -> None:
                                 activity_type=_act_type,
                                 content=text,
                                 response=body,
+                                response_type=_resp_type,
+                                response_ok=_response_ok,
+                                duration_ms=_duration,
+                                error=_msg_error,
                                 chat_id=chat_id,
                                 thread_id=thread_id,
                             )

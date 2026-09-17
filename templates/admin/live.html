@@ -3,44 +3,106 @@
 {% block content %}
 
 <div class="card">
-  <!-- Header (compact) -->
+  <!-- Header -->
   <div class="card-head" style="padding:12px 16px;">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
       <h1 style="margin:0;font-size:16px;">🖥️ Live</h1>
       <span id="liveDot" style="color:#22c55e;font-size:12px;">● LIVE</span>
       <span id="liveTime" style="font-size:11px;opacity:0.6;">—</span>
     </div>
-    <button class="btn ghost tiny" onclick="loadLive()" style="padding:4px 10px;font-size:11px;">🔄</button>
+    <button class="btn ghost tiny" onclick="loadLive()" style="padding:4px 10px;font-size:11px;">🔄 Refresh</button>
   </div>
 
-  <!-- Stats — inline chips -->
+  <!-- Stats cards -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);">
+    <div class="stat-box">
+      <div class="stat-label">👥 Users</div>
+      <div class="stat-value" id="statUsers">—</div>
+      <div class="stat-sub" id="statUsersSub">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">📤 Msgs Today</div>
+      <div class="stat-value" id="statMsgs">—</div>
+      <div class="stat-sub" id="statMsgsSub">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">⏱️ Avg Duration</div>
+      <div class="stat-value" id="statDur">—</div>
+      <div class="stat-sub">Bot response</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">❌ Errors</div>
+      <div class="stat-value" id="statErr">—</div>
+      <div class="stat-sub">today</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">📋 Tasks</div>
+      <div class="stat-value" id="statTasks">—</div>
+      <div class="stat-sub" id="statSent">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">🏪 Shops</div>
+      <div class="stat-value" id="statShops">—</div>
+      <div class="stat-sub">active</div>
+    </div>
+  </div>
+
+  <!-- Process chips -->
   <div style="display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--border);">
-    <span class="chip" id="chipUsers">👥 —</span>
-    <span class="chip" id="chipShops">🏪 —</span>
-    <span class="chip" id="chipTasks">📋 —</span>
-    <span class="chip" id="chipSent">📤 —</span>
-    <span class="chip" id="chipBot">🐕 —</span>
-    <span class="chip" id="chipFlask">🌐 —</span>
-    <span class="chip" id="chipWatchdog">🐕 —</span>
+    <span class="chip" id="chipBot">🐕 Bot —</span>
+    <span class="chip" id="chipFlask">🌐 Flask —</span>
+    <span class="chip" id="chipWatchdog">🐕 Watchdog —</span>
   </div>
 
-  <!-- Activity table (compact) -->
-  <div class="table-wrap" style="max-height:60vh;overflow-y:auto;">
+  <!-- Filter bar -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--border);align-items:center;">
+    <select id="fUser" class="input-tiny" onchange="loadLive()">
+      <option value="">— User —</option>
+    </select>
+    <select id="fType" class="input-tiny" onchange="loadLive()">
+      <option value="">— Type —</option>
+      <option value="message">📩 message</option>
+      <option value="command">⚡ command</option>
+      <option value="callback">🔘 callback</option>
+      <option value="error">❌ error</option>
+    </select>
+    <select id="fDate" class="input-tiny" onchange="loadLive()">
+      <option value="today">Today</option>
+      <option value="week">Week</option>
+      <option value="month">Month</option>
+      <option value="all">All</option>
+    </select>
+    <input type="text" id="fQ" class="input-tiny" placeholder="🔍 Search msg..."
+           onkeypress="if(event.key==='Enter')loadLive()" style="min-width:180px;">
+    <button class="btn ghost tiny" onclick="clearFilters()">✖ Clear</button>
+  </div>
+
+  <!-- Activity table -->
+  <div class="table-wrap" style="max-height:65vh;overflow-y:auto;">
     <table class="table" style="font-size:12px;">
       <thead style="position:sticky;top:0;background:var(--card-bg,#1a1a1a);z-index:1;">
         <tr>
-          <th style="padding:6px 8px;">Time</th>
-          <th style="padding:6px 8px;">User</th>
-          <th style="padding:6px 8px;">Shop</th>
-          <th style="padding:6px 8px;">Type</th>
+          <th style="padding:6px 8px;width:70px;">Time</th>
+          <th style="padding:6px 8px;width:90px;">User</th>
+          <th style="padding:6px 8px;width:80px;">Type</th>
           <th style="padding:6px 8px;">User Msg</th>
           <th style="padding:6px 8px;">Bot Reply</th>
+          <th style="padding:6px 8px;width:60px;">Dur</th>
         </tr>
       </thead>
       <tbody id="activityBody">
         <tr><td colspan="6" style="text-align:center;opacity:0.5;padding:20px;">Loading...</td></tr>
       </tbody>
     </table>
+  </div>
+</div>
+
+<!-- Modal — row detail -->
+<div id="rowModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;padding:20px;overflow-y:auto;">
+  <div style="max-width:700px;margin:40px auto;background:var(--card-bg,#1a1a1a);border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;">
+    <button onclick="closeModal()" style="position:absolute;top:10px;right:10px;background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;">✖</button>
+    <h3 style="margin-top:0;">📋 Activity Detail</h3>
+    <div id="modalBody" style="font-size:13px;"></div>
   </div>
 </div>
 
@@ -56,58 +118,191 @@
   font-size: 12px;
   white-space: nowrap;
 }
-.chip.ok { color: #22c55e; }
-.chip.err { color: #ef4444; }
+.chip.ok { color: #22c55e; border-color: #22c55e; }
+.chip.err { color: #ef4444; border-color: #ef4444; }
+
+.stat-box {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg, #1a1a1a);
+}
+.stat-label {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
+.stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.stat-sub {
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+.input-tiny {
+  padding: 5px 10px;
+  font-size: 12px;
+  background: var(--card-bg, #1a1a1a);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  outline: none;
+}
+.input-tiny:focus {
+  border-color: #22c55e;
+}
+
+tr.clickable { cursor: pointer; }
+tr.clickable:hover { background: rgba(255,255,255,0.05); }
+
+.type-msg { color: #3b82f6; }
+.type-cmd { color: #f59e0b; }
+.type-cb  { color: #8b5cf6; }
+.type-err { color: #ef4444; font-weight: 600; }
 </style>
 
 <script>
+let _lastData = [];
+
 async function loadLive() {
   try {
-    const r = await fetch("/api/admin/live");
+    const user = document.getElementById("fUser").value;
+    const type = document.getElementById("fType").value;
+    const date = document.getElementById("fDate").value;
+    const q = document.getElementById("fQ").value;
+
+    const params = new URLSearchParams();
+    if (user) params.set("user", user);
+    if (type) params.set("type", type);
+    if (date) params.set("date", date);
+    if (q) params.set("q", q);
+    params.set("limit", "50");
+
+    const r = await fetch("/api/admin/live?" + params.toString());
     const d = await r.json();
+    _lastData = d.recent || [];
 
     document.getElementById("liveTime").textContent = d.timestamp;
+    document.getElementById("liveDot").style.color = "#22c55e";
+    document.getElementById("liveDot").textContent = "● LIVE";
 
-    // Chips
-    document.getElementById("chipUsers").textContent = "👥 " + d.users.verified + " (" + d.users.active_30m + " active)";
-    document.getElementById("chipShops").textContent = "🏪 " + d.shops.length + " · " + (d.shops.map(s => s.code).join(",") || "—");
-    document.getElementById("chipTasks").textContent = "📋 " + d.tasks.active + " active";
-    document.getElementById("chipSent").textContent = "📤 " + d.tasks.sent_today + " sent";
+    // Stats
+    const s = d.stats || {};
+    const u = d.users || {};
+    document.getElementById("statUsers").textContent = s.users_verified || 0;
+    document.getElementById("statUsersSub").textContent = (s.users_active_30m || 0) + " active 30m";
+    document.getElementById("statMsgs").textContent = s.msgs_today || 0;
+    document.getElementById("statMsgsSub").textContent = "today";
+    document.getElementById("statDur").textContent = (s.duration_avg_ms || 0) + "ms";
+    document.getElementById("statErr").textContent = s.errors_today || 0;
+    document.getElementById("statTasks").textContent = d.tasks?.active || 0;
+    document.getElementById("statSent").textContent = (d.tasks?.sent_today || 0) + " sent";
+    document.getElementById("statShops").textContent = (d.shops || []).length;
 
+    // Process chips
     const botChip = document.getElementById("chipBot");
-    botChip.textContent = "🐕 Bot " + (d.processes.bot ? "✅" : "❌");
-    botChip.className = "chip " + (d.processes.bot ? "ok" : "err");
+    botChip.textContent = "🐕 Bot " + (d.processes?.bot ? "✅" : "❌");
+    botChip.className = "chip " + (d.processes?.bot ? "ok" : "err");
 
     const flaskChip = document.getElementById("chipFlask");
-    flaskChip.textContent = "🌐 Flask " + (d.processes.flask ? "✅" : "❌");
-    flaskChip.className = "chip " + (d.processes.flask ? "ok" : "err");
+    flaskChip.textContent = "🌐 Flask " + (d.processes?.flask ? "✅" : "❌");
+    flaskChip.className = "chip " + (d.processes?.flask ? "ok" : "err");
 
     const wdChip = document.getElementById("chipWatchdog");
-    wdChip.textContent = "🐕 Watch " + (d.processes.watchdog ? "✅" : "❌");
-    wdChip.className = "chip " + (d.processes.watchdog ? "ok" : "err");
+    wdChip.textContent = "🐕 Watchdog " + (d.processes?.watchdog ? "✅" : "❌");
+    wdChip.className = "chip " + (d.processes?.watchdog ? "ok" : "err");
 
-    // Table
+    // Filter users
+    const fUserSel = document.getElementById("fUser");
+    const curUser = fUserSel.value;
+    const userList = d.filters?.users || [];
+    fUserSel.innerHTML = '<option value="">— User —</option>' +
+      userList.map(u => `<option value="${u}" ${u === curUser ? 'selected' : ''}>${u}</option>`).join('');
+
+    // Activity rows
     const tb = document.getElementById("activityBody");
-    if (d.recent.length === 0) {
-      tb.innerHTML = '<tr><td colspan="6" style="text-align:center;opacity:0.5;padding:20px;">No activity yet</td></tr>';
-    } else {
-      tb.innerHTML = d.recent.map(a => `
-        <tr>
+    if (!d.recent || d.recent.length === 0) {
+      tb.innerHTML = '<tr><td colspan="6" style="text-align:center;opacity:0.5;padding:20px;">No activity</td></tr>';
+      return;
+    }
+
+    tb.innerHTML = d.recent.map((a, idx) => {
+      const tClass = a.activity_type === "command" ? "type-cmd"
+                   : a.activity_type === "callback" ? "type-cb"
+                   : a.activity_type === "error" ? "type-err" : "type-msg";
+      const dur = a.duration_ms > 0 ? a.duration_ms + "ms" : "—";
+      const err = a.error ? ` <span class="type-err">⚠️</span>` : "";
+      return `
+        <tr class="clickable" onclick="showDetail(${idx})">
           <td class="muted" style="padding:6px 8px;">${a.created_at}</td>
           <td style="padding:6px 8px;">${a.first_name}</td>
-          <td style="padding:6px 8px;"><span class="pill">${a.shop_code}</span></td>
-          <td class="muted" style="padding:6px 8px;">${a.activity_type}</td>
-          <td class="muted" style="padding:6px 8px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${a.content}">${a.content}</td>
-          <td class="muted" style="padding:6px 8px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${a.response || ''}">${a.response || "—"}</td>
+          <td class="${tClass}" style="padding:6px 8px;">${a.activity_type}</td>
+          <td class="muted" style="padding:6px 8px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(a.content)}">${escapeHtml(a.content)}</td>
+          <td class="muted" style="padding:6px 8px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(a.response)}">${escapeHtml(a.response)}${err}</td>
+          <td class="muted" style="padding:6px 8px;">${dur}</td>
         </tr>
-      `).join("");
-    }
+      `;
+    }).join("");
+
   } catch (e) {
     console.error(e);
     document.getElementById("liveDot").style.color = "#ef4444";
     document.getElementById("liveDot").textContent = "● ERROR";
   }
 }
+
+function showDetail(idx) {
+  const a = _lastData[idx];
+  if (!a) return;
+  const html = `
+    <div style="margin-bottom:12px;">
+      <b>🕐 Time:</b> ${a.created_at_full} (MM)<br>
+      <b>👤 User:</b> ${a.first_name} (ID: ${a.user_id})<br>
+      <b>🏪 Shop:</b> ${a.shop_code}<br>
+      <b>📌 Type:</b> ${a.activity_type}<br>
+      <b>⏱️ Duration:</b> ${a.duration_ms}ms<br>
+      <b>✅ Status:</b> ${a.ok ? '✅ OK' : '❌ Failed'}
+    </div>
+    <div style="margin-bottom:12px;">
+      <b>📩 User Message:</b>
+      <pre style="white-space:pre-wrap;background:rgba(0,0,0,0.2);padding:8px;border-radius:6px;font-size:12px;max-height:200px;overflow-y:auto;">${escapeHtml(a.content_full)}</pre>
+    </div>
+    <div style="margin-bottom:12px;">
+      <b>🤖 Bot Reply:</b>
+      <pre style="white-space:pre-wrap;background:rgba(0,0,0,0.2);padding:8px;border-radius:6px;font-size:12px;max-height:300px;overflow-y:auto;">${escapeHtml(a.response_full)}</pre>
+    </div>
+    ${a.error ? `<div style="color:#ef4444;"><b>❌ Error:</b> ${escapeHtml(a.error)}</div>` : ''}
+  `;
+  document.getElementById("modalBody").innerHTML = html;
+  document.getElementById("rowModal").style.display = "block";
+}
+
+function closeModal() {
+  document.getElementById("rowModal").style.display = "none";
+}
+
+function clearFilters() {
+  document.getElementById("fUser").value = "";
+  document.getElementById("fType").value = "";
+  document.getElementById("fDate").value = "today";
+  document.getElementById("fQ").value = "";
+  loadLive();
+}
+
+function escapeHtml(s) {
+  if (!s) return "";
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[c]);
+}
+
+// Close modal on Esc
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") closeModal();
+});
 
 loadLive();
 setInterval(loadLive, 5000);

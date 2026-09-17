@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Iterable
+import re
 
 from app.models import Shop
 
@@ -24,27 +25,41 @@ class ShopResolution:
 
 
 def normalize_shop_code(raw: str | None) -> str | None:
-    """Normalize 'a3', 'A 3', ' a3 ', 'ah', 'A14' → 'A3', 'AH', 'A14'.
+    """Normalize a shop code.
 
-    Format validation only — DB existence check by get_shop_by_code().
-    Accepts: [A-Z] followed by 0-15 more [A-Z0-9] chars (2-16 total).
+    Examples:
+      "a3"   -> "A3"
+      " A 3 " -> "A3"
+      "3"    -> "A3"
+      "ah"   -> "AH"
+      "A14"  -> "A14"
     """
     if not raw:
         return None
+
     s = str(raw).strip().upper().replace(" ", "")
     if not s:
         return None
 
-    import re
-    # Accept: A1-A99+, AH, B1, AB12, ... (letter start, alphanumeric rest)
+    # Numeric-only shop code: "3" means "A3".
+    if s.isdigit():
+        n = int(s)
+        return f"A{n}" if 1 <= n <= 13 else None
+
+    # This system currently has shops A1-A13 only.
+    if re.match(r"^A\d+$", s):
+        n = int(s[1:])
+        return s if 1 <= n <= 13 else None
+
+    # Accept other letter-starting alphanumeric shop codes.
     if re.match(r"^[A-Z][A-Z0-9]{0,15}$", s):
-        # If pure A + number, no zero-padding: A01 → A1
+        # Normalize A01 -> A1.
         m = re.match(r"^([A-Z])(\d+)$", s)
         if m:
             return f"{m.group(1)}{int(m.group(2))}"
         return s
-    return None
 
+    return None
 
 def resolve_shop(
     *,

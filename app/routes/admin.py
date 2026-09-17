@@ -3016,27 +3016,33 @@ def live_monitor():
 @admin_bp.route("/api/admin/live")
 @login_required
 def api_live_status():
-    """Live status JSON — for auto-refresh."""
+    """Live status JSON — with filters (Live v2)."""
     from datetime import datetime, timedelta
     from app.extensions import db
     from app.models import TelegramUser, TelegramUserShop, Shop, Task, TaskHistory
     from app.models.bot_activity import BotActivity
 
+    # ── Filters (query params) ──
+    f_user = request.args.get("user", "").strip()
+    f_type = request.args.get("type", "").strip()
+    f_q = request.args.get("q", "").strip()
+    f_date = request.args.get("date", "today").strip()  # today/week/month/all
+    f_limit = request.args.get("limit", 30, type=int)
+
     now = datetime.now()
     cutoff_30 = now - timedelta(minutes=30)
 
-    # Active users (last 30 min)
+    # ── Users ──
     active_users = TelegramUser.query.filter(
         TelegramUser.is_verified == True,  # noqa: E712
         TelegramUser.is_blocked == False,  # noqa: E712
     ).count()
 
-    # Users seen in last 30 min (via activity)
     active_30m = db.session.query(
         db.func.count(db.distinct(BotActivity.telegram_user_id))
     ).filter(BotActivity.created_at >= cutoff_30).scalar() or 0
 
-    # Shops + user count
+    # ── Shops ──
     shops = db.session.query(
         Shop.code,
         db.func.count(db.distinct(TelegramUserShop.telegram_user_id)),
@@ -3045,7 +3051,7 @@ def api_live_status():
     ).group_by(Shop.code).all()
     shops_data = [{"code": c, "users": int(n or 0)} for c, n in shops if n]
 
-    # Tasks
+    # ── Tasks ──
     active_tasks = Task.query.filter_by(
         status="PENDING", is_deleted=False
     ).count()
@@ -3055,7 +3061,7 @@ def api_live_status():
         db.func.date(TaskHistory.created_at) == today,
     ).count()
 
-    # Processes (ps)
+    # ── Processes ──
     import subprocess
     try:
         ps_out = subprocess.run(
@@ -3065,12 +3071,39 @@ def api_live_status():
         ps_out = ""
     bot_ok = "python bot.py" in ps_out
     flask_ok = "python run.py" in ps_out
-    watchdog_ok = "watchdog.sh" in ps_out
+    watchdog_ok = "watchdog" in ps_out or "python watchdog" in ps_out
 
-    # Recent activity (20)
-    recent = BotActivity.query.order_by(
-        BotActivity.created_at.desc()
-    ).limit(20).all()
+    # ── Activity — with filters ──
+    aq = BotActivity.query
+
+    if f_user:
+        aq = aq.filter(BotActivity.first_name.ilike(f"%{f_user}%"))
+    if f_type:
+        aq = aq.filter(BotActivity.activity_type == f_type)
+    if f_q:
+        aq = aq.filter(BotActivity.content.ilike(f"%{f_q}%"))
+
+    if f_date == "today":
+        aq = aq.filter(db.func.date(BotActivity.created_at) == today)
+    elif f_date == "week":
+        week_ago = now - timedelta(days=7)
+        aq = aq.filter(BotActivity.created_at >= week_ago)
+    elif f_date == "month":
+        month_ago = now - timedelta(days=30)
+        aq = aq.filter(BotActivity.created_at >= month_ago)
+
+    recent = aq.order_by(BotActivity.created_at.desc()).limit(f_limit).all()
+
+    # ── Myanmar time (UTC+6:30) ──
+    from datetime import timedelta as _td
+    MM_TZ = _td(hours=6, minutes=30)
+
+    def _mm_time(dt):
+        if not dt:
+            return "—"
+        # created_at likely UTC (CURRENT_TIMESTAMP) — convert
+        mm = dt + MM_TZ
+        return mm.strftime("%H:%M:%S")
 
     recent_data = [{
         "id": r.id,
@@ -3078,17 +3111,64 @@ def api_live_status():
         "first_name": r.first_name or "—",
         "shop_code": r.shop_code or "—",
         "activity_type": r.activity_type or "—",
-        "content": (r.content or "")[:120],
-        "response": (r.response or "")[:200],
+        "content": (r.content or "")[:200],
+        "content_full": r.content or "",
+        "response": (r.response or "")[:300],
+        "response_full": r.response or "",
+        "response_type": r.response_type or "—",
         "ok": bool(r.response_ok),
-        "created_at": r.created_at.strftime("%H:%M:%S") if r.created_at else "—",
+        "duration_ms": r.duration_ms or 0,
+        "error": (r.error or "")[:200],
+        "created_at": _mm_time(r.created_at),
+        "created_at_full": r.created_at.strftime("%Y-%m-%d %H:%M:%S") if r.created_at else "—",
     } for r in recent]
 
+    # ── Filter options — distinct users / types ──
+    user_list = db.session.query(
+        db.distinct(BotActivity.first_name)
+    ).filter(BotActivity.first_name.isnot(None)).limit(50).all()
+    user_list = sorted([u[0] for u in user_list if u[0]])
+
+    # ── Stats ──
+    msgs_today = BotActivity.query.filter(
+        db.func.date(BotActivity.created_at) == today
+    ).count()
+
+    dur_avg = db.session.query(
+        db.func.avg(BotActivity.duration_ms)
+    ).filter(BotActivity.duration_ms.isnot(None)).scalar() or 0
+
+    err_today = BotActivity.query.filter(
+        db.func.date(BotActivity.created_at) == today,
+        BotActivity.response_ok == False,  # noqa: E712
+    ).count()
+
+    # ── Timestamp — Myanmar ──
+    mm_now = now + MM_TZ
+
     return jsonify({
-        "timestamp": now.strftime("%Y-%m-%d %H:%M:%S"),
+        "timestamp": mm_now.strftime("%Y-%m-%d %H:%M:%S") + " (MM)",
+        "filters": {
+            "users": user_list,
+            "types": ["message", "command", "callback", "error"],
+            "current": {
+                "user": f_user,
+                "type": f_type,
+                "q": f_q,
+                "date": f_date,
+            },
+        },
+        # ★ Backward compat
         "users": {
             "verified": active_users,
             "active_30m": active_30m,
+        },
+        "stats": {
+            "users_verified": active_users,
+            "users_active_30m": active_30m,
+            "msgs_today": msgs_today,
+            "duration_avg_ms": int(dur_avg),
+            "errors_today": err_today,
         },
         "shops": shops_data,
         "tasks": {
@@ -3102,5 +3182,4 @@ def api_live_status():
         },
         "recent": recent_data,
     })
-
 

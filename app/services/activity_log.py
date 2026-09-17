@@ -1,4 +1,4 @@
-"""Activity logger — writes to bot_activity table."""
+"""Activity logger — writes to bot_activity table (Live v2)."""
 from __future__ import annotations
 
 import logging
@@ -9,8 +9,14 @@ log = logging.getLogger(__name__)
 def log_activity(*, telegram_user_id=None, first_name=None,
                  shop_code=None, activity_type=None, content=None,
                  response_ok=True, chat_id=None, thread_id=None,
-                 response=None, response_type=None):
-    """Insert one activity row. Never raises."""
+                 response=None, response_type=None,
+                 duration_ms=None, error=None):
+    """Insert one activity row. Never raises.
+
+    Live v2 — additional fields:
+      - duration_ms: Bot response time in milliseconds
+      - error: Exception text (if response_ok=False)
+    """
     try:
         from app.extensions import db
         from app.models.bot_activity import BotActivity
@@ -26,6 +32,8 @@ def log_activity(*, telegram_user_id=None, first_name=None,
             thread_id=thread_id,
             response=(response or "")[:5000] or None,
             response_type=response_type,
+            duration_ms=int(duration_ms) if duration_ms is not None else None,
+            error=(error or "")[:1000] or None,
         )
         db.session.add(row)
         db.session.commit()
