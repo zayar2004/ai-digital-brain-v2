@@ -185,4 +185,34 @@ def create_app(config_override: dict | None = None) -> Flask:
         except Exception as exc:  # pragma: no cover
             app.logger.warning("Scheduler start failed: %s", exc)
 
+    # ★ Bot Thread — Start if running on Render (or explicitly enabled)
+    # This runs the Telegram bot in a background thread so we don't need
+    # a separate Background Worker (which requires a paid Render plan).
+    _should_start_bot = (
+        _os.environ.get("RENDER")               # Render sets this automatically
+        or _os.environ.get("START_BOT_THREAD")  # manual override
+    )
+    if _should_start_bot and not app.config.get("TESTING"):
+        try:
+            from app.telegram.bot import run_polling
+            import threading
+
+            def _bot_worker():
+                with app.app_context():
+                    try:
+                        app.logger.info("★ Bot thread starting (run_polling)...")
+                        run_polling()
+                    except Exception as _be:
+                        app.logger.exception("Bot thread crashed: %s", _be)
+
+            _bot_thread = threading.Thread(
+                target=_bot_worker,
+                daemon=True,
+                name="telegram-bot",
+            )
+            _bot_thread.start()
+            app.logger.info("★ Bot thread started (daemon)")
+        except Exception as exc:
+            app.logger.warning("Bot thread start failed: %s", exc)
+
     return app
