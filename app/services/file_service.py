@@ -15,6 +15,8 @@ from pathlib import Path
 from werkzeug.datastructures import FileStorage
 
 from app.config import UPLOAD_ROOT
+from app.services import supabase_storage
+
 from app.security.validators import (
     category_for_filename,
     is_allowed_file,
@@ -70,14 +72,32 @@ def save_upload(file: FileStorage, *, category: str | None = None) -> dict:
             h.update(chunk)
             size += len(chunk)
 
+    mime = getattr(file, "mimetype", None) or "application/octet-stream"
+
+    # ★ Upload to Supabase Storage (cloud) — returns public URL
+    file_path_value = str(target_path)   # fallback: local path
+    try:
+        if supabase_storage.is_configured():
+            remote_path = f"{cat}/{stored_name}"
+            public_url = supabase_storage.upload_file(
+                local_path=target_path,
+                remote_path=remote_path,
+                content_type=mime,
+            )
+            if public_url:
+                file_path_value = public_url
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("Supabase upload skipped: %s", e)
+
     return {
         "original_filename": sanitize_original_filename(file.filename),
         "stored_filename": stored_name,
-        "file_path": str(target_path),
+        "file_path": file_path_value,
         "file_hash": h.hexdigest(),
         "size_bytes": size,
         "category": cat,
-        "mime_type": getattr(file, "mimetype", None),
+        "mime_type": mime,
     }
 
 
