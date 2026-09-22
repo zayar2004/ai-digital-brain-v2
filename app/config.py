@@ -77,6 +77,9 @@ class Config:
     TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
     TELEGRAM_API_BASE = os.getenv("TELEGRAM_API_BASE", "http://127.0.0.1:5000").strip()
 
+    # ★ Bot ↔ API security (Bot က API ကို ခေါ်တဲ့အခါ သုံး)
+    BOT_API_KEY = os.getenv("BOT_API_KEY", "").strip()
+
     OCR_ENABLED = _bool("OCR_ENABLED", True)
     WEB_RESEARCH_ENABLED = _bool("WEB_RESEARCH_ENABLED", False)
     GOOGLE_DRIVE_ENABLED = _bool("GOOGLE_DRIVE_ENABLED", False)

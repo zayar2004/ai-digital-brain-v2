@@ -1,51 +1,88 @@
-.env
-.env.*
+# ================================================================
+# AI DIGITAL BRAIN — .gitignore
+# ================================================================
+
+# ─── Python ───
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
 *.egg-info/
-.pytest_cache/
-.venv/
+.eggs/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ─── Virtual Environments ───
 venv/
 env/
+ENV/
+.venv
+.env.*.local
+
+# ─── Environment (NEVER commit) ───
+.env
+.env.bak*
+.env.local
+.env.production
+.env.development
+
+# ─── Database (NEVER commit) ───
 instance/
 *.db
-*.sqlite
 *.sqlite3
-logs/
-*.log
-uploads/documents/*
-uploads/excel/*
-uploads/pdf/*
-uploads/word/*
-uploads/photos/*
-!uploads/**/.gitkeep
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
+*.sqlite
+app.db
+workai.db
 
-# Backups
-*.bak_*
-*.bak
-*_FAILOVER_*
+# ─── Backups (NEVER commit) ───
 backups/
-
-# Portable builds
-portable_*/
-portable.zip
-
-# PID files
-*.pid
-
-# Test files
-*_test.xlsx
-
-# Code backups/variants
-*.bak*
+.bot_backup_*/
+.auto_backup_*/
+.step4_backup/
+*.bak
+*.bak_*
+*.bak2
+*.bak3
 *.broken
 *.messy
 *.old
+*.orig
 *~
 
-# Exception: .env template
+# ─── Logs ───
+logs/
+*.log
+*.log.*
+
+# ─── Uploads (user data) ───
+uploads/
+media/
+files/
+
+# ─── Process / State ───
+*.pid
+.backup_loop.pid
+*.lock
+
+# ─── IDE / Editors ───
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ─── OS ───
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Test files ───
+Machine_Code_A3_test.xlsx
+*.test.xlsx
+
+# ─── GitHub workflow exceptions ───
+!.gitignore
 !.env.example

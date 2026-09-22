@@ -120,10 +120,19 @@ class BackendClient:
         self.base_url = (base_url or Config.TELEGRAM_API_BASE).rstrip("/")
         self.timeout = timeout
 
+    def _auth_headers(self) -> dict:
+        """★ API Key header (Bot ↔ API security)."""
+        headers = {}
+        api_key = getattr(Config, "BOT_API_KEY", "") or ""
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        return headers
+
     def _get(self, path: str, params: dict | None = None) -> dict[str, Any]:
         url = f"{self.base_url}{path}"
         try:
-            r = httpx.get(url, params=params, timeout=self.timeout)
+            r = httpx.get(url, params=params, timeout=self.timeout,
+                          headers=self._auth_headers())
             r.raise_for_status()
             return r.json()
         except httpx.HTTPError as e:
@@ -134,7 +143,8 @@ class BackendClient:
     def _post(self, path: str, json_body: dict | None = None) -> dict[str, Any]:
         url = f"{self.base_url}{path}"
         try:
-            r = _http_client.post(url, json=json_body or {}, timeout=self.timeout)
+            r = _http_client.post(url, json=json_body or {}, timeout=self.timeout,
+                                  headers=self._auth_headers())
             r.raise_for_status()
             return r.json()
         except httpx.HTTPError as e:

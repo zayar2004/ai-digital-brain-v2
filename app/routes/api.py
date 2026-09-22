@@ -6,19 +6,74 @@ PART 9: /api/me + /api/machine-codes/search
 
 from __future__ import annotations
 
+import hmac
+import logging
+
 from flask import Blueprint, jsonify, request
 from flask_login import current_user
 from app.extensions import db
+from app.config import Config
 
 from app.security.shop_scope import normalize_shop_code
 from app.services import machine_code_service as MCS
 from app.services.shop_service import get_shop_by_code
+
+log = logging.getLogger(__name__)
 
 api_bp = Blueprint("api", __name__)
 
 
 def _err(code: str, message: str, status: int = 400):
     return jsonify({"success": False, "error": {"code": code, "message": message}}), status
+
+
+# ================================================================
+# ★ API Key authentication (Bot ↔ API security)
+# ================================================================
+# Public endpoints (Bot/Admin Web က key မလိုဘဲ ခေါ်နိုင်)
+_PUBLIC_PATHS = frozenset({
+    "/api/me",       # Admin Web / browser session
+    "/api/health",   # health check
+})
+
+
+@api_bp.before_request
+def require_api_key():
+    """
+    Bot က API ကို ခေါ်တဲ့အခါ 'Authorization: Bearer <BOT_API_KEY>' လိုတယ်။
+
+    Skip cases:
+      1. /api/me, /api/health → public
+      2. logged-in admin (current_user.is_authenticated)
+      3. BOT_API_KEY မသတ်မှတ်ရင် (dev mode)
+    """
+    # 1. Public endpoints
+    if request.path in _PUBLIC_PATHS:
+        return None
+
+    # 2. Logged-in admin (Admin Web session) → skip
+    if current_user.is_authenticated:
+        return None
+
+    # 3. Bot: Bearer token required
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return _err("unauthorized", "API key required.", 401)
+
+    token = auth[7:].strip()
+    expected = Config.BOT_API_KEY
+
+    # Dev mode — no key set → allow
+    if not expected:
+        log.warning("BOT_API_KEY not set — API is open (dev mode).")
+        return None
+
+    # Constant-time comparison
+    if not hmac.compare_digest(token, expected):
+        log.warning("Invalid API key from %s", request.remote_addr)
+        return _err("unauthorized", "Invalid API key.", 401)
+
+    return None
 
 
 @api_bp.route("/me", methods=["GET"])
