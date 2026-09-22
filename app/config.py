@@ -62,6 +62,15 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # ★ Supabase Session Pooler — Transaction Aborted Fix
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+        'pool_size': 5,
+        'max_overflow': 10,
+        'isolation_level': 'AUTOCOMMIT',
+    }
+
     UPLOAD_ROOT = str(UPLOAD_ROOT)
     MAX_CONTENT_LENGTH = _int("MAX_CONTENT_LENGTH_MB", 32) * 1024 * 1024
 
