@@ -412,15 +412,21 @@ def send_media_group_with_cache(
 
     try:
         for i, p in enumerate(photos[:10]):
-            if not getattr(p, "file_path", None):
+            fp = getattr(p, "file_path", None)
+            if not fp:
                 continue
             if getattr(p, "telegram_file_id", None):
+                # 1. Cached Telegram file_id → direct
                 item = {"type": "photo", "media": p.telegram_file_id}
+            elif isinstance(fp, str) and fp.startswith(("http://", "https://")):
+                # 2. ★ Public URL → Telegram can fetch directly
+                item = {"type": "photo", "media": fp}
             else:
-                resized = _resize_photo(p.file_path)
+                # 3. Local file → resize + multipart upload
+                resized = _resize_photo(fp)
                 try:
                     fh = open(resized, "rb")
-                    opened.append((fh, resized if resized != p.file_path else None))
+                    opened.append((fh, resized if resized != fp else None))
                     attach = "file%d" % i
                     files[attach] = fh
                     item = {"type": "photo", "media": "attach://" + attach}
