@@ -12,6 +12,21 @@ from flask import Flask, jsonify, request
 
 from app.config import get_config
 from app.utils.help_texts import HELP
+
+# ★ Fix: Override SQLAlchemy psycopg2 hstore query (Supabase Session Pooler issue)
+def _fix_psycopg2_hstore():
+    """Disable psycopg2 hstore auto-query that fails on Supabase Session Pooler."""
+    try:
+        from sqlalchemy.dialects.postgresql import psycopg2 as pg_psycopg2
+        # Override _hstore_oids to return empty list (skip query)
+        def _no_hstore(self, dbapi_conn):
+            return None
+        pg_psycopg2.PGDialect_psycopg2._hstore_oids = _no_hstore
+    except Exception:
+        pass
+
+_fix_psycopg2_hstore()
+
 from app.extensions import csrf, db, login_manager
 
 
