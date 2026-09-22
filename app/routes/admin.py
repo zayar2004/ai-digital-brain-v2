@@ -2758,17 +2758,39 @@ from app.models import KnowledgePhoto
 @admin_bp.route("/knowledge/<int:knowledge_id>/photos/upload", methods=["POST"])
 @login_required
 def knowledge_photo_upload(knowledge_id: int):
+    """Upload one OR multiple photos (input name='photos' with multiple)."""
     _require(P.KNOWLEDGE_EDIT)
 
-    f = request.files.get("photo")
-    if not f or not f.filename:
+    # Support both single "photo" and multiple "photos"
+    files = request.files.getlist("photos") or []
+    # Fallback: single name="photo"
+    if not files or not any(getattr(f, "filename", "") for f in files):
+        f = request.files.get("photo")
+        if f and f.filename:
+            files = [f]
+
+    # Filter valid files
+    files = [f for f in files if f and getattr(f, "filename", "")]
+    if not files:
         flash("ပုံ ရွေးပါ။", "error")
         return redirect(url_for("admin.knowledge_detail", knowledge_id=knowledge_id))
 
     caption = ftext("caption", max_len=500) or None
+
     try:
-        KPS.add_photo(knowledge_id=knowledge_id, file=f, caption=caption)
-        flash("ပုံ ထည့်ပြီးပါပြီ။", "success")
+        if len(files) == 1:
+            KPS.add_photo(knowledge_id=knowledge_id, file=files[0], caption=caption)
+            flash("ပုံ ၁ ပုံ ထည့်ပြီးပါပြီ။", "success")
+        else:
+            saved, errors = KPS.add_photos_batch(
+                knowledge_id=knowledge_id,
+                files=files,
+                captions=None,
+            )
+            if saved:
+                flash(f"ပုံ {saved} ပုံ ထည့်ပြီးပါပြီ။", "success")
+            if errors:
+                flash(f"⚠️ {len(errors)} ပုံ — မရ: " + "; ".join(errors[:3]), "error")
     except ValueError as e:
         flash(str(e), "error")
     return redirect(url_for("admin.knowledge_detail", knowledge_id=knowledge_id))

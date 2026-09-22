@@ -86,3 +86,4 @@ Machine_Code_A3_test.xlsx
 # ─── GitHub workflow exceptions ───
 !.gitignore
 !.env.example
+.secret_key.txt

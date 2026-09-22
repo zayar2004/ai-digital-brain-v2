@@ -114,21 +114,20 @@
   {% endif %}
 
   {% if photos|length < 10 %}
-  <h3 style="margin-top:16px;">➕ ပုံ အသစ် ထည့်</h3>
+  <h3 style="margin-top:16px;">➕ ပုံ အသစ် ထည့် (10 ပုံ အထိ ရွေးလို့ရ)</h3>
   <form method="post" action="{{ url_for('admin.knowledge_photo_upload', knowledge_id=knowledge.id) }}"
         enctype="multipart/form-data"
         style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="form-group" style="flex:2;min-width:180px;margin:0;">
-      <label>Photo file (JPG/PNG/WEBP)</label>
-      <input type="file" name="photo" accept="image/*" required>
-    </div>
-    <div class="form-group" style="flex:2;min-width:180px;margin:0;">
-      <label>Caption (optional)</label>
-      <input type="text" name="caption" maxlength="500">
+    <div class="form-group" style="flex:2;min-width:220px;margin:0;">
+      <label>Photo files (JPG/PNG/WEBP) — multiple ရွေးလို့ရ</label>
+      <input type="file" name="photos" accept="image/*" multiple required>
     </div>
     <button class="btn" type="submit">📤 Upload</button>
   </form>
+  <p class="muted" style="margin-top:6px;font-size:12px;">
+    💡 Multiple photos ကို တစ်ခါတည်း ရွေးပြီး Upload နှိပ်ပါ။ လက်ရှိ {{ photos|length }}/10 ပုံ။
+  </p>
   {% else %}
   <p class="muted" style="margin-top:12px;">⚠️ Photo 10 ပုံ ပြည့်ပြီ။</p>
   {% endif %}
