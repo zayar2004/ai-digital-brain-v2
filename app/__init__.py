@@ -141,6 +141,13 @@ def create_app(config_override: dict | None = None) -> Flask:
             pass
         return response
 
+    @app.route("/robots.txt")
+    def robots_txt():
+        from flask import send_from_directory
+        import os
+        static_dir = os.path.join(app.root_path, "..", "static")
+        return send_from_directory(static_dir, "robots.txt", mimetype="text/plain")
+
     @app.route("/health")
     def health():
         from sqlalchemy import text
